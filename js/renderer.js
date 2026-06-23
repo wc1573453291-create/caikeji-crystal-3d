@@ -139,6 +139,10 @@
     }
 
     buildAtoms(crystal, supercell) {
+      if (crystal.lattice?.type === "hex-primitive") {
+        return buildHexPrimitiveAtoms(crystal.lattice, supercell);
+      }
+
       const atoms = [];
       const seen = new Set();
       const transform = getLatticeTransform(crystal.lattice || {});
@@ -199,6 +203,11 @@
     }
 
     addUnitCells(crystal, supercell) {
+      if (crystal.lattice?.type === "hex-primitive") {
+        drawHexPrimitiveSupercell(this.viewer, crystal.lattice, supercell);
+        return;
+      }
+
       for (let i = 0; i < supercell; i += 1) {
         for (let j = 0; j < supercell; j += 1) {
           for (let k = 0; k < supercell; k += 1) {
@@ -213,6 +222,32 @@
     }
 
     addLatticeAnnotations(crystal) {
+      if (crystal.lattice?.type === "hex-primitive") {
+        const origin = hexPrimitivePoint(crystal.lattice, 0, 0, 0);
+        const aAxis = subtract(hexPrimitivePoint(crystal.lattice, 1, 0, 0), origin);
+        const bAxis = subtract(hexPrimitivePoint(crystal.lattice, 0, 1, 0), origin);
+        const cAxis = subtract(hexPrimitivePoint(crystal.lattice, 0, 0, 1), origin);
+        drawGuide(this.viewer, origin, add(origin, aAxis), "#54c6b8");
+        drawGuide(this.viewer, origin, add(origin, bAxis), "#7aa4ff");
+        drawGuide(this.viewer, origin, add(origin, cAxis), "#efc66b");
+        this.viewer.addLabel("a=b", {
+          position: add(origin, scale(add(normalize(aAxis), normalize(bAxis)), 0.38)),
+          fontColor: "#ffffff",
+          backgroundColor: EDGE_LABEL_BG,
+          fontSize: 12,
+          inFront: true
+        });
+        this.viewer.addLabel("c", {
+          position: add(origin, scale(cAxis, 0.5)),
+          fontColor: "#ffffff",
+          backgroundColor: EDGE_LABEL_BG,
+          fontSize: 12,
+          inFront: true
+        });
+        drawAngleArcBetween(this.viewer, origin, aAxis, bAxis, 0.32, "γ", "#f3a546");
+        return;
+      }
+
       if (crystal.lattice?.type === "hex") {
         const origin = { x: 0, y: 0, z: -0.72 };
         const aAxis = { x: 0.86, y: 0.5, z: 0 };
@@ -336,6 +371,63 @@
       y: b * v + alphaShift * w,
       z: c * w
     });
+  }
+
+  function buildHexPrimitiveAtoms(lattice, supercell) {
+    const atoms = [];
+    const seen = new Set();
+    for (let i = 0; i <= supercell; i += 1) {
+      for (let j = 0; j <= supercell; j += 1) {
+        for (let k = 0; k <= supercell; k += 1) {
+          const point = hexPrimitivePoint(lattice, i, j, k);
+          const key = pointKey(point);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          atoms.push({ elem: "P", cell: [i, j, k], x: point.x, y: point.y, z: point.z });
+        }
+      }
+    }
+    return atoms;
+  }
+
+  function drawHexPrimitiveSupercell(viewer, lattice, supercell) {
+    const seen = new Set();
+    for (let i = 0; i <= supercell; i += 1) {
+      for (let j = 0; j <= supercell; j += 1) {
+        for (let k = 0; k <= supercell; k += 1) {
+          if (i < supercell) drawUniquePrimitiveEdge(viewer, lattice, seen, i, j, k, i + 1, j, k);
+          if (j < supercell) drawUniquePrimitiveEdge(viewer, lattice, seen, i, j, k, i, j + 1, k);
+          if (k < supercell) drawUniquePrimitiveEdge(viewer, lattice, seen, i, j, k, i, j, k + 1);
+        }
+      }
+    }
+  }
+
+  function drawUniquePrimitiveEdge(viewer, lattice, seen, i1, j1, k1, i2, j2, k2) {
+    const start = hexPrimitivePoint(lattice, i1, j1, k1);
+    const end = hexPrimitivePoint(lattice, i2, j2, k2);
+    const edgeKey = [pointKey(start), pointKey(end)].sort().join("|");
+    if (seen.has(edgeKey)) return;
+    seen.add(edgeKey);
+    drawEdges(viewer, [start, end], [[0, 1]]);
+  }
+
+  function hexPrimitivePoint(lattice, i, j, k) {
+    const a = lattice.a || 1;
+    const c = lattice.c || 1.45;
+    return {
+      x: a * i - (a / 2) * j,
+      y: (Math.sqrt(3) * a / 2) * j,
+      z: c * k
+    };
+  }
+
+  function pointKey(point) {
+    return `${round6(point.x)}*${round6(point.y)}*${round6(point.z)}`;
+  }
+
+  function round6(value) {
+    return Math.round(value * 1000000) / 1000000;
   }
 
   function offsetCartesian(atom, lattice, i, j, k) {

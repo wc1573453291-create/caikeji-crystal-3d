@@ -218,7 +218,7 @@
     elements.styleBtn.textContent = state.modelStyle === "stick" ? "空间填充" : "球棍模型";
 
     elements.supercellBtn.classList.toggle("is-active", state.supercell === 2);
-    elements.supercellBtn.textContent = state.supercell === 1 ? "2×2×2" : "1 个晶胞";
+    elements.supercellBtn.textContent = state.supercell === 1 ? "1 个晶胞" : "2×2×2（已展开）";
   }
 
   function getCategory(id) {
