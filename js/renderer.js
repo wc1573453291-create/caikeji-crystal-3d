@@ -142,6 +142,9 @@
       if (crystal.lattice?.type === "hex-primitive") {
         return buildHexPrimitiveAtoms(crystal.lattice, supercell);
       }
+      if (crystal.lattice?.type === "hcp-honeycomb") {
+        return buildHcpHoneycombAtoms(crystal.lattice, supercell);
+      }
 
       const atoms = [];
       const seen = new Set();
@@ -205,6 +208,10 @@
     addUnitCells(crystal, supercell) {
       if (crystal.lattice?.type === "hex-primitive") {
         drawHexPrimitiveSupercell(this.viewer, crystal.lattice, supercell);
+        return;
+      }
+      if (crystal.lattice?.type === "hcp-honeycomb") {
+        drawHcpHoneycombSupercell(this.viewer, crystal.lattice, supercell);
         return;
       }
 
@@ -390,6 +397,114 @@
     return atoms;
   }
 
+  function buildHcpHoneycombAtoms(lattice, supercell) {
+    const atoms = [];
+    const seen = new Set();
+    const centers = hcpHoneycombCenters(lattice, supercell);
+    const c = lattice.c || 1.55;
+
+    centers.forEach((center) => {
+      for (let k = 0; k <= supercell; k += 1) {
+        const z = k * c;
+        hcpHexVertices(lattice, center, z).forEach((point) => addUniqueAtom(atoms, seen, "M", point));
+        addUniqueAtom(atoms, seen, "M", { x: center.x, y: center.y, z });
+      }
+
+      for (let k = 0; k < supercell; k += 1) {
+        const z = k * c + c / 2;
+        hcpBLayerAtoms(lattice, center, z).forEach((point) => addUniqueAtom(atoms, seen, "M", point));
+      }
+    });
+
+    return atoms;
+  }
+
+  function drawHcpHoneycombSupercell(viewer, lattice, supercell) {
+    const seen = new Set();
+    const centers = hcpHoneycombCenters(lattice, supercell);
+    const c = lattice.c || 1.55;
+
+    centers.forEach((center) => {
+      for (let k = 0; k <= supercell; k += 1) {
+        drawHcpHexEdges(viewer, lattice, seen, center, k * c);
+      }
+      for (let k = 0; k < supercell; k += 1) {
+        drawHcpVerticalEdges(viewer, lattice, seen, center, k * c, (k + 1) * c);
+      }
+    });
+  }
+
+  function hcpHoneycombCenters(lattice, supercell) {
+    const s = lattice.radius || 1;
+    const centers = [];
+    for (let i = 0; i < supercell; i += 1) {
+      for (let j = 0; j < supercell; j += 1) {
+        centers.push({
+          x: i * 1.5 * s,
+          y: j * Math.sqrt(3) * s + i * Math.sqrt(3) * s / 2
+        });
+      }
+    }
+    return centers;
+  }
+
+  function hcpHexVertices(lattice, center, z) {
+    const s = lattice.radius || 1;
+    const vertices = [];
+    for (let n = 0; n < 6; n += 1) {
+      const angle = n * Math.PI / 3;
+      vertices.push({
+        x: center.x + Math.cos(angle) * s,
+        y: center.y + Math.sin(angle) * s,
+        z
+      });
+    }
+    return vertices;
+  }
+
+  function hcpBLayerAtoms(lattice, center, z) {
+    const s = lattice.radius || 1;
+    const atoms = [];
+    for (let i = 0; i < 3; i += 1) {
+      const angle = Math.PI / 2 + i * (2 * Math.PI / 3);
+      atoms.push({
+        x: center.x + 0.58 * s * Math.cos(angle),
+        y: center.y + 0.58 * s * Math.sin(angle),
+        z
+      });
+    }
+    return atoms;
+  }
+
+  function drawHcpHexEdges(viewer, lattice, seen, center, z) {
+    const vertices = hcpHexVertices(lattice, center, z);
+    for (let i = 0; i < 6; i += 1) {
+      drawUniqueEdge(viewer, seen, vertices[i], vertices[(i + 1) % 6]);
+    }
+  }
+
+  function drawHcpVerticalEdges(viewer, lattice, seen, center, z1, z2) {
+    const bottom = hcpHexVertices(lattice, center, z1);
+    const top = hcpHexVertices(lattice, center, z2);
+    for (let i = 0; i < 6; i += 1) {
+      drawUniqueEdge(viewer, seen, bottom[i], top[i]);
+    }
+  }
+
+  function addUniqueAtom(atoms, seen, elem, point) {
+    const key = pointKey(point);
+    if (seen.has(key)) return;
+    seen.add(key);
+    atoms.push({ elem, cell: [0, 0, 0], x: point.x, y: point.y, z: point.z });
+  }
+
+  function drawUniqueEdge(viewer, seen, start, end) {
+    const edgeKey = [pointKey(start), pointKey(end)].sort().join("|");
+    if (seen.has(edgeKey)) return;
+    seen.add(edgeKey);
+    drawEdges(viewer, [start, end], [[0, 1]]);
+  }
+
   function drawHexPrimitiveSupercell(viewer, lattice, supercell) {
     const seen = new Set();
     for (let i = 0; i <= supercell; i += 1) {
@@ -406,10 +521,7 @@
   function drawUniquePrimitiveEdge(viewer, lattice, seen, i1, j1, k1, i2, j2, k2) {
     const start = hexPrimitivePoint(lattice, i1, j1, k1);
     const end = hexPrimitivePoint(lattice, i2, j2, k2);
-    const edgeKey = [pointKey(start), pointKey(end)].sort().join("|");
-    if (seen.has(edgeKey)) return;
-    seen.add(edgeKey);
-    drawEdges(viewer, [start, end], [[0, 1]]);
+    drawUniqueEdge(viewer, seen, start, end);
   }
 
   function hexPrimitivePoint(lattice, i, j, k) {
