@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#102326" />
+    <title>材科基 3D 晶体结构库</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="https://3Dmol.org/build/3Dmol-min.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="viewer-section" aria-label="晶体结构三维视图">
+        <div class="topbar">
+          <div>
+            <p class="course-label">材料科学基础</p>
+            <h1>3D 晶体结构库</h1>
+          </div>
+          <button class="icon-button" id="resetViewBtn" type="button" aria-label="重置视角" title="重置视角">↺</button>
+        </div>
+
+        <div class="viewer-wrap">
+          <div id="crystalViewer" class="crystal-viewer" role="img" aria-label="可交互三维晶体模型"></div>
+          <div class="viewer-status" id="viewerStatus">正在载入 3D 结构...</div>
+          <div class="element-legend" id="elementLegend" aria-label="元素颜色说明"></div>
+        </div>
+
+        <div class="gesture-strip" aria-label="手势说明">
+          <span>单指旋转</span>
+          <span>双指缩放</span>
+          <span>三指平移</span>
+        </div>
+      </section>
+
+      <section class="control-section" aria-label="晶体结构控制面板">
+        <nav class="category-tabs" id="categoryTabs" aria-label="结构分类"></nav>
+        <div class="structure-tabs" id="structureTabs" aria-label="结构切换按钮"></div>
+
+        <div class="toolbar" aria-label="显示控制">
+          <button class="tool-button is-active" id="unitCellBtn" type="button">隐藏晶胞</button>
+          <button class="tool-button is-active" id="labelBtn" type="button">隐藏图例</button>
+          <button class="tool-button" id="styleBtn" type="button">空间填充</button>
+          <button class="tool-button" id="supercellBtn" type="button">2×2×2</button>
+        </div>
+
+        <article class="knowledge-card" aria-labelledby="cardTitle">
+          <div class="card-heading">
+            <div>
+              <h2 id="cardTitle">结构名称</h2>
+              <p id="cardEnglish">English name</p>
+            </div>
+            <span class="badge" id="structureBadge">FCC</span>
+          </div>
+
+          <dl class="info-grid">
+            <div>
+              <dt id="labelTypical">典型物质</dt>
+              <dd id="typicalMaterials"></dd>
+            </div>
+            <div>
+              <dt id="labelLatticeType">点阵类型</dt>
+              <dd id="latticeType"></dd>
+            </div>
+            <div>
+              <dt id="labelAtomCount">原子数</dt>
+              <dd id="atomCount"></dd>
+            </div>
+            <div>
+              <dt id="labelCoordination">配位数</dt>
+              <dd id="coordinationNumber"></dd>
+            </div>
+            <div>
+              <dt id="labelRadiusRelation">半径关系</dt>
+              <dd id="radiusRelation"></dd>
+            </div>
+            <div>
+              <dt id="labelPacking">致密度</dt>
+              <dd id="packingFactor"></dd>
+            </div>
+            <div>
+              <dt id="labelConstants">晶格常数</dt>
+              <dd id="latticeConstants"></dd>
+            </div>
+            <div>
+              <dt id="labelClosePlane">密排面</dt>
+              <dd id="closePackedPlane"></dd>
+            </div>
+            <div>
+              <dt id="labelCloseDirection">密排方向</dt>
+              <dd id="closePackedDirection"></dd>
+            </div>
+          </dl>
+
+          <div class="study-block">
+            <h3>考研重点</h3>
+            <p id="examFocus"></p>
+          </div>
+          <div class="study-block warning">
+            <h3>易错点</h3>
+            <p id="commonMistake"></p>
+          </div>
+          <p class="memory-line" id="memoryLine"></p>
+        </article>
+
+        <section class="future-panel" aria-label="后续扩展功能">
+          <h2>后续扩展</h2>
+          <div class="future-grid">
+            <button type="button" disabled>最近邻</button>
+            <button type="button" disabled>密排面</button>
+            <button type="button" disabled>密排方向</button>
+            <button type="button" disabled>间隙位置</button>
+            <button type="button" disabled>自测题</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="js/crystalData.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
