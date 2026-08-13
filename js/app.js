@@ -9,7 +9,9 @@
     showUnitCell: true,
     showLabels: true,
     modelStyle: "stick",
-    supercell: 1
+    supercell: 1,
+    showTetraSites: false,
+    showOctaSites: false
   };
 
   const elements = {};
@@ -45,6 +47,7 @@
     elements.latticeConstants = document.getElementById("latticeConstants");
     elements.closePackedPlane = document.getElementById("closePackedPlane");
     elements.closePackedDirection = document.getElementById("closePackedDirection");
+    elements.interstitialSites = document.getElementById("interstitialSites");
     elements.examFocus = document.getElementById("examFocus");
     elements.commonMistake = document.getElementById("commonMistake");
     elements.memoryLine = document.getElementById("memoryLine");
@@ -52,6 +55,8 @@
     elements.labelBtn = document.getElementById("labelBtn");
     elements.styleBtn = document.getElementById("styleBtn");
     elements.supercellBtn = document.getElementById("supercellBtn");
+    elements.tetraBtn = document.getElementById("tetraBtn");
+    elements.octaBtn = document.getElementById("octaBtn");
     elements.resetViewBtn = document.getElementById("resetViewBtn");
   }
 
@@ -129,6 +134,18 @@
       renderer.updateOptions({ supercell: state.supercell });
     });
 
+    elements.tetraBtn.addEventListener("click", () => {
+      state.showTetraSites = !state.showTetraSites;
+      updateButtonStates();
+      renderer.updateOptions({ showTetraSites: state.showTetraSites });
+    });
+
+    elements.octaBtn.addEventListener("click", () => {
+      state.showOctaSites = !state.showOctaSites;
+      updateButtonStates();
+      renderer.updateOptions({ showOctaSites: state.showOctaSites });
+    });
+
     elements.resetViewBtn.addEventListener("click", () => renderer.resetView());
     window.addEventListener("resize", handleResize);
     window.addEventListener("orientationchange", handleResize);
@@ -151,7 +168,9 @@
       showUnitCell: state.showUnitCell,
       showLabels: state.showLabels,
       modelStyle: state.modelStyle,
-      supercell: state.supercell
+      supercell: state.supercell,
+      showTetraSites: state.showTetraSites,
+      showOctaSites: state.showOctaSites
     });
     requestAnimationFrame(() => renderer.resetView());
   }
@@ -172,6 +191,7 @@
     elements.examFocus.textContent = crystal.examFocus;
     elements.commonMistake.textContent = crystal.commonMistake;
     elements.memoryLine.textContent = crystal.memoryLine;
+    elements.interstitialSites.textContent = crystal.interstitialSummary || "";
     toggleInfoRows(crystal);
   }
 
@@ -184,6 +204,7 @@
     setRowVisible(elements.latticeConstants, hasUsefulValue(crystal.latticeConstants));
     setRowVisible(elements.closePackedPlane, hasUsefulValue(crystal.closePackedPlane));
     setRowVisible(elements.closePackedDirection, hasUsefulValue(crystal.closePackedDirection));
+    setRowVisible(elements.interstitialSites, hasUsefulValue(crystal.interstitialSummary));
   }
 
   function setRowVisible(valueElement, isVisible) {
@@ -219,6 +240,14 @@
 
     elements.supercellBtn.classList.toggle("is-active", state.supercell === 2);
     elements.supercellBtn.textContent = state.supercell === 1 ? "1 个晶胞" : "2×2×2（已展开）";
+
+    const supportsInterstitials = Boolean(window.CRYSTAL_LIBRARY[state.crystalId]?.interstitialSites);
+    elements.tetraBtn.hidden = !supportsInterstitials;
+    elements.octaBtn.hidden = !supportsInterstitials;
+    elements.tetraBtn.classList.toggle("is-active", state.showTetraSites);
+    elements.octaBtn.classList.toggle("is-active", state.showOctaSites);
+    elements.tetraBtn.textContent = state.showTetraSites ? "隐藏四面体间隙" : "四面体间隙";
+    elements.octaBtn.textContent = state.showOctaSites ? "隐藏八面体间隙" : "八面体间隙";
   }
 
   function getCategory(id) {

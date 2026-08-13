@@ -41,6 +41,8 @@
           <button class="tool-button is-active" id="labelBtn" type="button">隐藏图例</button>
           <button class="tool-button" id="styleBtn" type="button">空间填充</button>
           <button class="tool-button" id="supercellBtn" type="button">2×2×2</button>
+          <button class="tool-button site-toggle" id="tetraBtn" type="button">四面体间隙</button>
+          <button class="tool-button site-toggle" id="octaBtn" type="button">八面体间隙</button>
         </div>
 
         <article class="knowledge-card" aria-labelledby="cardTitle">
@@ -89,6 +91,10 @@
               <dt id="labelCloseDirection">密排方向</dt>
               <dd id="closePackedDirection"></dd>
             </div>
+            <div>
+              <dt id="labelInterstitialSites">间隙位置</dt>
+              <dd id="interstitialSites"></dd>
+            </div>
           </dl>
 
           <div class="study-block">
@@ -108,7 +114,7 @@
             <button type="button" disabled>最近邻</button>
             <button type="button" disabled>密排面</button>
             <button type="button" disabled>密排方向</button>
-            <button type="button" disabled>间隙位置</button>
+            <button type="button" disabled>更多间隙类型</button>
             <button type="button" disabled>自测题</button>
           </div>
         </section>

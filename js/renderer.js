@@ -20,7 +20,9 @@
     A: "#d49b38",
     B: "#7865d6",
     O: "#d95d50",
-    C: "#59636d"
+    C: "#59636d",
+    TET: "#35d0b2",
+    OCT: "#ff8a4c"
   };
 
   const RADII = {
@@ -40,7 +42,9 @@
     A: 0.15,
     B: 0.13,
     O: 0.105,
-    C: 0.12
+    C: 0.12,
+    TET: 0.07,
+    OCT: 0.082
   };
 
   const ELEMENT_NAMES = {
@@ -60,7 +64,9 @@
     A: "A 位离子",
     B: "B 位离子",
     O: "O2-",
-    C: "C / Si / Ge"
+    C: "C / Si / Ge",
+    TET: "四面体间隙",
+    OCT: "八面体间隙"
   };
 
   const EDGE_LABEL_BG = "rgba(41,111,126,0.88)";
@@ -78,7 +84,9 @@
         showUnitCell: true,
         showLabels: true,
         modelStyle: "stick",
-        supercell: 1
+        supercell: 1,
+        showTetraSites: false,
+        showOctaSites: false
       };
     }
 
@@ -113,6 +121,7 @@
       if (this.options.showUnitCell && crystal.lattice) {
         this.addUnitCells(crystal, effectiveSupercell);
       }
+      this.addInterstitialSites(crystal, effectiveSupercell);
       if (this.options.showLabels && crystal.kind === "bravais" && effectiveSupercell === 1) {
         this.addLatticeAnnotations(crystal);
       }
@@ -185,6 +194,30 @@
           radius,
           color: COLORS[atom.elem] || COLORS.P,
           opacity: 1
+        });
+      });
+    }
+
+    addInterstitialSites(crystal, supercell) {
+      if (!crystal.interstitialSites) return;
+
+      const activeSites = [];
+      if (this.options.showTetraSites) activeSites.push(...buildInterstitialAtoms(crystal, "tetra", supercell));
+      if (this.options.showOctaSites) activeSites.push(...buildInterstitialAtoms(crystal, "octa", supercell));
+
+      activeSites.forEach((site) => {
+        const radius = RADII[site.elem] || 0.07;
+        this.viewer.addSphere({
+          center: { x: site.x, y: site.y, z: site.z },
+          radius,
+          color: COLORS[site.elem],
+          opacity: 0.76
+        });
+        this.viewer.addSphere({
+          center: { x: site.x, y: site.y, z: site.z },
+          radius: radius * 1.42,
+          color: COLORS[site.elem],
+          opacity: 0.18
         });
       });
     }
@@ -318,6 +351,8 @@
       this.legendElement.classList.toggle("is-hidden", !this.options.showLabels);
 
       const elements = [...new Set(this.currentAtoms.map((atom) => atom.elem))];
+      if (this.currentCrystal?.interstitialSites && this.options.showTetraSites) elements.push("TET");
+      if (this.currentCrystal?.interstitialSites && this.options.showOctaSites) elements.push("OCT");
       this.legendElement.innerHTML = elements.map((elem) => {
         const color = COLORS[elem] || COLORS.P;
         const name = ELEMENT_NAMES[elem] || elem;
@@ -364,6 +399,34 @@
     if (crystal.id === "perovskite" && ![a.elem, b.elem].includes("B")) return false;
     if (crystal.id === "diamond" && a.elem !== b.elem) return false;
     return true;
+  }
+
+  function buildInterstitialAtoms(crystal, siteType, supercell) {
+    if (crystal.interstitialSites?.type === "hcp-honeycomb") {
+      return buildHcpInterstitialSites(crystal.lattice, siteType, supercell);
+    }
+
+    const source = crystal.interstitialSites?.[siteType] || [];
+    const atoms = [];
+    const seen = new Set();
+    const transform = getLatticeTransform(crystal.lattice || {});
+    const elem = siteType === "tetra" ? "TET" : "OCT";
+
+    for (let i = 0; i < supercell; i += 1) {
+      for (let j = 0; j < supercell; j += 1) {
+        for (let k = 0; k < supercell; k += 1) {
+          source.forEach((site) => {
+            const point = transform(site.x + i, site.y + j, site.z + k);
+            const key = `${elem}:${pointKey(point)}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            atoms.push({ elem, x: point.x, y: point.y, z: point.z });
+          });
+        }
+      }
+    }
+
+    return atoms;
   }
 
   function getLatticeTransform(lattice = {}) {
@@ -413,6 +476,26 @@
       for (let k = 0; k < supercell; k += 1) {
         const z = k * c + c / 2;
         hcpBLayerAtoms(lattice, center, z).forEach((point) => addUniqueAtom(atoms, seen, "M", point));
+      }
+    });
+
+    return atoms;
+  }
+
+  function buildHcpInterstitialSites(lattice, siteType, supercell) {
+    const atoms = [];
+    const seen = new Set();
+    const centers = hcpHoneycombCenters(lattice, supercell);
+    const c = lattice.c || 1.55;
+    const elem = siteType === "tetra" ? "TET" : "OCT";
+
+    centers.forEach((center) => {
+      for (let k = 0; k < supercell; k += 1) {
+        const baseZ = k * c;
+        const sites = siteType === "tetra"
+          ? hcpTetraInterstitials(lattice, center, baseZ)
+          : hcpOctaInterstitials(lattice, center, baseZ);
+        sites.forEach((point) => addUniqueAtom(atoms, seen, elem, point));
       }
     });
 
@@ -474,6 +557,41 @@
       });
     }
     return atoms;
+  }
+
+  function hcpTetraInterstitials(lattice, center, baseZ) {
+    const s = lattice.radius || 1;
+    const c = lattice.c || 1.55;
+    const lower = [
+      { x: center.x, y: center.y + 0.34 * s, z: baseZ + 0.25 * c },
+      { x: center.x + 0.29 * s, y: center.y - 0.17 * s, z: baseZ + 0.25 * c },
+      { x: center.x - 0.29 * s, y: center.y - 0.17 * s, z: baseZ + 0.25 * c },
+      { x: center.x + 0.5 * s, y: center.y + 0.34 * s, z: baseZ + 0.25 * c },
+      { x: center.x - 0.5 * s, y: center.y + 0.34 * s, z: baseZ + 0.25 * c },
+      { x: center.x, y: center.y - 0.68 * s, z: baseZ + 0.25 * c }
+    ];
+    const upper = [
+      { x: center.x, y: center.y - 0.34 * s, z: baseZ + 0.75 * c },
+      { x: center.x + 0.29 * s, y: center.y + 0.17 * s, z: baseZ + 0.75 * c },
+      { x: center.x - 0.29 * s, y: center.y + 0.17 * s, z: baseZ + 0.75 * c },
+      { x: center.x + 0.5 * s, y: center.y - 0.34 * s, z: baseZ + 0.75 * c },
+      { x: center.x - 0.5 * s, y: center.y - 0.34 * s, z: baseZ + 0.75 * c },
+      { x: center.x, y: center.y + 0.68 * s, z: baseZ + 0.75 * c }
+    ];
+    return [...lower, ...upper];
+  }
+
+  function hcpOctaInterstitials(lattice, center, baseZ) {
+    const s = lattice.radius || 1;
+    const c = lattice.c || 1.55;
+    return [
+      { x: center.x, y: center.y, z: baseZ + 0.5 * c },
+      { x: center.x + 0.5 * s, y: center.y + Math.sqrt(3) * s / 6, z: baseZ + 0.5 * c },
+      { x: center.x - 0.5 * s, y: center.y + Math.sqrt(3) * s / 6, z: baseZ + 0.5 * c },
+      { x: center.x + 0.5 * s, y: center.y - Math.sqrt(3) * s / 6, z: baseZ + 0.5 * c },
+      { x: center.x - 0.5 * s, y: center.y - Math.sqrt(3) * s / 6, z: baseZ + 0.5 * c },
+      { x: center.x, y: center.y + Math.sqrt(3) * s / 3, z: baseZ + 0.5 * c }
+    ];
   }
 
   function drawHcpHexEdges(viewer, lattice, seen, center, z) {
