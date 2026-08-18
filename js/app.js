@@ -16,6 +16,7 @@
 
   const elements = {};
   let renderer = null;
+  let interstitialRenderer = null;
 
   document.addEventListener("DOMContentLoaded", () => {
     cacheElements();
@@ -24,6 +25,8 @@
 
     renderer = new window.CrystalRenderer("crystalViewer", elements.viewerStatus, elements.elementLegend);
     if (renderer.init()) {
+      interstitialRenderer = new window.InterstitialRenderer("interstitialViewer");
+      interstitialRenderer.init();
       selectCrystal(state.crystalId);
       bindControls();
       handleResize();
@@ -48,6 +51,14 @@
     elements.closePackedPlane = document.getElementById("closePackedPlane");
     elements.closePackedDirection = document.getElementById("closePackedDirection");
     elements.interstitialSites = document.getElementById("interstitialSites");
+    elements.interstitialDetail = document.getElementById("interstitialDetail");
+    elements.interstitialDetailTitle = document.getElementById("interstitialDetailTitle");
+    elements.interstitialGeometry = document.getElementById("interstitialGeometry");
+    elements.interstitialCoordination = document.getElementById("interstitialCoordination");
+    elements.interstitialRatio = document.getElementById("interstitialRatio");
+    elements.interstitialMetalRadius = document.getElementById("interstitialMetalRadius");
+    elements.interstitialGapRadius = document.getElementById("interstitialGapRadius");
+    elements.interstitialNote = document.getElementById("interstitialNote");
     elements.examFocus = document.getElementById("examFocus");
     elements.commonMistake = document.getElementById("commonMistake");
     elements.memoryLine = document.getElementById("memoryLine");
@@ -135,15 +146,11 @@
     });
 
     elements.tetraBtn.addEventListener("click", () => {
-      state.showTetraSites = !state.showTetraSites;
-      updateButtonStates();
-      renderer.updateOptions({ showTetraSites: state.showTetraSites });
+      toggleInterstitialType("tetra");
     });
 
     elements.octaBtn.addEventListener("click", () => {
-      state.showOctaSites = !state.showOctaSites;
-      updateButtonStates();
-      renderer.updateOptions({ showOctaSites: state.showOctaSites });
+      toggleInterstitialType("octa");
     });
 
     elements.resetViewBtn.addEventListener("click", () => renderer.resetView());
@@ -193,6 +200,40 @@
     elements.memoryLine.textContent = crystal.memoryLine;
     elements.interstitialSites.textContent = crystal.interstitialSummary || "";
     toggleInfoRows(crystal);
+    updateInterstitialDetail(crystal);
+  }
+
+  function toggleInterstitialType(type) {
+    const wasActive = type === "tetra" ? state.showTetraSites : state.showOctaSites;
+    state.showTetraSites = type === "tetra" && !wasActive;
+    state.showOctaSites = type === "octa" && !wasActive;
+    updateButtonStates();
+    renderer.updateOptions({
+      showTetraSites: state.showTetraSites,
+      showOctaSites: state.showOctaSites
+    });
+    updateInterstitialDetail(window.CRYSTAL_LIBRARY[state.crystalId]);
+    requestAnimationFrame(() => renderer.resetView());
+  }
+
+  function updateInterstitialDetail(crystal) {
+    const activeType = state.showTetraSites ? "tetra" : (state.showOctaSites ? "octa" : "");
+    const detail = activeType ? crystal.interstitialDetails?.[activeType] : null;
+    elements.interstitialDetail.hidden = !detail;
+
+    if (!detail) {
+      interstitialRenderer?.clear();
+      return;
+    }
+
+    elements.interstitialDetailTitle.textContent = detail.title;
+    elements.interstitialGeometry.textContent = detail.geometry;
+    elements.interstitialCoordination.textContent = detail.coordination;
+    elements.interstitialRatio.textContent = detail.radiusRatio;
+    elements.interstitialMetalRadius.textContent = detail.metalRadius;
+    elements.interstitialGapRadius.textContent = detail.gapRadius;
+    elements.interstitialNote.textContent = detail.note;
+    requestAnimationFrame(() => interstitialRenderer?.render(crystal, activeType));
   }
 
   function toggleInfoRows(crystal) {
@@ -246,8 +287,10 @@
     elements.octaBtn.hidden = !supportsInterstitials;
     elements.tetraBtn.classList.toggle("is-active", state.showTetraSites);
     elements.octaBtn.classList.toggle("is-active", state.showOctaSites);
-    elements.tetraBtn.textContent = state.showTetraSites ? "隐藏四面体间隙" : "四面体间隙";
-    elements.octaBtn.textContent = state.showOctaSites ? "隐藏八面体间隙" : "八面体间隙";
+    elements.tetraBtn.setAttribute("aria-pressed", String(state.showTetraSites));
+    elements.octaBtn.setAttribute("aria-pressed", String(state.showOctaSites));
+    elements.tetraBtn.textContent = state.showTetraSites ? "隐藏四面体" : "典型四面体";
+    elements.octaBtn.textContent = state.showOctaSites ? "隐藏八面体" : "典型八面体";
   }
 
   function getCategory(id) {
@@ -265,6 +308,7 @@
     handleResize.timer = window.setTimeout(() => {
       renderer.viewer.resize();
       renderer.viewer.render();
+      interstitialRenderer?.resize();
     }, 120);
   }
 })();

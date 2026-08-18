@@ -65,8 +65,8 @@
     B: "B 位离子",
     O: "O2-",
     C: "C / Si / Ge",
-    TET: "四面体间隙",
-    OCT: "八面体间隙"
+    TET: "典型四面体间隙（放大）",
+    OCT: "典型八面体间隙（放大）"
   };
 
   const EDGE_LABEL_BG = "rgba(41,111,126,0.88)";
@@ -112,6 +112,8 @@
       this.options = { ...this.options, ...nextOptions };
       this.viewer.clear();
       const effectiveSupercell = crystal.kind === "concept" ? 1 : this.options.supercell;
+      const hasActiveInterstitial = Boolean(crystal.interstitialSites)
+        && (this.options.showTetraSites || this.options.showOctaSites);
       this.currentAtoms = this.buildAtoms(crystal, effectiveSupercell);
 
       this.addAtoms();
@@ -128,10 +130,16 @@
 
       this.updateLegend();
       this.viewer.zoomTo();
+      if (hasActiveInterstitial) {
+        this.viewer.zoom(interstitialZoom(crystal, effectiveSupercell));
+      }
       this.viewer.render();
 
       const cellText = crystal.kind === "concept" ? "概念示意" : (this.options.supercell === 1 ? "1 个晶胞" : "2×2×2 晶胞");
-      this.setStatus(`${crystal.chineseName} · ${cellText}`);
+      const siteText = crystal.interstitialSites && this.options.showTetraSites
+        ? " · 典型四面体间隙"
+        : (crystal.interstitialSites && this.options.showOctaSites ? " · 典型八面体间隙" : "");
+      this.setStatus(`${crystal.chineseName} · ${cellText}${siteText}`);
     }
 
     updateOptions(nextOptions) {
@@ -142,8 +150,12 @@
     resetView() {
       if (!this.viewer) return;
       this.viewer.zoomTo();
-      this.viewer.rotate(18, { x: 1, y: 0, z: 0 });
-      this.viewer.rotate(-28, { x: 0, y: 1, z: 0 });
+      if (this.currentCrystal?.interstitialSites && (this.options.showTetraSites || this.options.showOctaSites)) {
+        this.viewer.zoom(interstitialZoom(this.currentCrystal, this.options.supercell));
+      }
+      const bccOctaView = this.currentCrystal?.id === "bcc" && this.options.showOctaSites;
+      this.viewer.rotate(bccOctaView ? 48 : 18, { x: 1, y: 0, z: 0 });
+      this.viewer.rotate(bccOctaView ? -18 : -28, { x: 0, y: 1, z: 0 });
       this.viewer.render();
     }
 
@@ -186,6 +198,8 @@
     }
 
     addAtoms() {
+      const revealInterstitial = Boolean(this.currentCrystal?.interstitialSites)
+        && (this.options.showTetraSites || this.options.showOctaSites);
       this.currentAtoms.forEach((atom) => {
         const base = RADII[atom.elem] || 0.13;
         const radius = this.options.modelStyle === "spacefill" ? base * 1.58 : base;
@@ -193,7 +207,7 @@
           center: { x: atom.x, y: atom.y, z: atom.z },
           radius,
           color: COLORS[atom.elem] || COLORS.P,
-          opacity: 1
+          opacity: revealInterstitial && atom.elem === "M" ? 0.58 : 1
         });
       });
     }
@@ -201,25 +215,42 @@
     addInterstitialSites(crystal, supercell) {
       if (!crystal.interstitialSites) return;
 
-      const activeSites = [];
-      if (this.options.showTetraSites) activeSites.push(...buildInterstitialAtoms(crystal, "tetra", supercell));
-      if (this.options.showOctaSites) activeSites.push(...buildInterstitialAtoms(crystal, "octa", supercell));
+      const siteType = this.options.showTetraSites ? "tetra" : (this.options.showOctaSites ? "octa" : "");
+      if (!siteType) return;
 
-      activeSites.forEach((site) => {
-        const radius = RADII[site.elem] || 0.07;
+      const candidates = buildInterstitialAtoms(crystal, siteType, supercell);
+      const site = pickRepresentativeSite(candidates, this.currentAtoms, crystal, siteType, supercell);
+      if (!site) return;
+
+      const neighbors = representativeNeighborAtoms(crystal, siteType, site, this.currentAtoms);
+      const color = COLORS[site.elem];
+      const radius = crystal.id === "bcc"
+        ? (siteType === "tetra" ? 0.145 : 0.16)
+        : (siteType === "tetra" ? 0.105 : 0.118);
+
+      neighbors.forEach((atom) => {
+        const atomRadius = RADII.M * (this.options.modelStyle === "spacefill" ? 1.88 : 1.48);
         this.viewer.addSphere({
-          center: { x: site.x, y: site.y, z: site.z },
-          radius,
-          color: COLORS[site.elem],
-          opacity: 0.76
+          center: pointFrom(atom),
+          radius: atomRadius,
+          color,
+          opacity: 0.22
         });
-        this.viewer.addSphere({
-          center: { x: site.x, y: site.y, z: site.z },
-          radius: radius * 1.42,
-          color: COLORS[site.elem],
-          opacity: 0.18
-        });
+        drawGuide(this.viewer, pointFrom(site), pointFrom(atom), color, 0.012);
       });
+      drawCageEdges(this.viewer, neighbors, color, 0.014);
+
+      this.viewer.addSphere({ center: pointFrom(site), radius, color, opacity: 0.96 });
+      this.viewer.addSphere({ center: pointFrom(site), radius: radius * 1.55, color, opacity: 0.2 });
+      if (this.options.showLabels) {
+        this.viewer.addLabel("间隙原子 r", {
+          position: { x: site.x + radius * 1.2, y: site.y + radius * 1.1, z: site.z + radius * 1.3 },
+          fontColor: "#ffffff",
+          backgroundColor: siteType === "tetra" ? "rgba(18,116,99,0.92)" : "rgba(158,67,25,0.92)",
+          fontSize: 11,
+          inFront: true
+        });
+      }
     }
 
     addBonds(crystal) {
@@ -390,6 +421,207 @@
     setStatus(text) {
       if (this.statusElement) this.statusElement.textContent = text;
     }
+  }
+
+  class InterstitialRenderer {
+    constructor(containerId) {
+      this.container = document.getElementById(containerId);
+      this.viewer = null;
+    }
+
+    init() {
+      if (!this.container || !window.$3Dmol) return false;
+      this.viewer = window.$3Dmol.createViewer(this.container, { backgroundColor: "#f5f9f8" });
+      this.viewer.setViewStyle({ style: "outline", color: "#213b38", width: 0.035 });
+      return true;
+    }
+
+    clear() {
+      if (!this.viewer) return;
+      this.viewer.clear();
+      this.viewer.render();
+    }
+
+    resize() {
+      if (!this.viewer) return;
+      this.viewer.resize();
+      this.viewer.render();
+    }
+
+    render(crystal, siteType) {
+      if (!this.viewer) return;
+      const cluster = buildInterstitialCluster(crystal.id, siteType);
+      const detail = crystal.interstitialDetails?.[siteType];
+      if (!cluster || !detail) return;
+
+      this.viewer.clear();
+      drawCageEdges(this.viewer, cluster.metals, "#6f827e", 0.012);
+
+      cluster.metals.forEach((atom) => {
+        this.viewer.addSphere({
+          center: pointFrom(atom),
+          radius: cluster.metalRadius,
+          color: COLORS.M,
+          opacity: 0.62
+        });
+        drawGuide(this.viewer, cluster.center, pointFrom(atom), COLORS[cluster.elem], 0.009);
+      });
+
+      this.viewer.addSphere({
+        center: cluster.center,
+        radius: cluster.gapRadius,
+        color: COLORS[cluster.elem],
+        opacity: 1
+      });
+      this.viewer.addSphere({
+        center: cluster.center,
+        radius: cluster.gapRadius * 1.18,
+        color: COLORS[cluster.elem],
+        opacity: 0.18
+      });
+
+      const nearestMetal = [...cluster.metals].sort((a, b) => distance(cluster.center, a) - distance(cluster.center, b))[0];
+      drawGuide(this.viewer, cluster.center, pointFrom(nearestMetal), "#244f49", 0.015);
+      this.viewer.resize();
+      this.viewer.zoomTo();
+      this.viewer.rotate(16, { x: 1, y: 0, z: 0 });
+      this.viewer.rotate(-24, { x: 0, y: 1, z: 0 });
+      this.viewer.zoom(2.15);
+      this.viewer.render();
+    }
+  }
+
+  function representativeNeighborAtoms(crystal, siteType, site, currentAtoms) {
+    if (["fcc", "bcc"].includes(crystal.id)) {
+      const cluster = buildInterstitialCluster(crystal.id, siteType);
+      const localMetals = crystal.id === "bcc" && siteType === "octa"
+        ? cluster.metals.map((atom) => ({ x: atom.x, y: atom.z, z: atom.y }))
+        : cluster.metals;
+      return localMetals.map((atom) => ({
+        elem: "M",
+        x: site.x + atom.x,
+        y: site.y + atom.y,
+        z: site.z + atom.z
+      }));
+    }
+
+    return findNearestMetalAtoms(site, currentAtoms, siteType === "tetra" ? 4 : 6);
+  }
+
+  function interstitialZoom(crystal, supercell) {
+    if (supercell === 2) return 1.28;
+    if (crystal?.id === "bcc") return 4.2;
+    if (crystal?.id === "hcp") return 3.5;
+    return 3;
+  }
+
+  function buildInterstitialCluster(crystalId, siteType) {
+    const center = { x: 0, y: 0, z: 0 };
+    let metals;
+    let metalRadius;
+    let gapRadius;
+
+    if (crystalId === "bcc" && siteType === "tetra") {
+      metals = [
+        { x: -0.5, y: -0.25, z: 0 }, { x: 0.5, y: -0.25, z: 0 },
+        { x: 0, y: 0.25, z: 0.5 }, { x: 0, y: 0.25, z: -0.5 }
+      ];
+      metalRadius = Math.sqrt(3) / 4;
+      gapRadius = (Math.sqrt(5) - Math.sqrt(3)) / 4;
+    } else if (crystalId === "bcc") {
+      metals = [
+        { x: 0, y: 0, z: -0.5 }, { x: 0, y: 0, z: 0.5 },
+        { x: -0.5, y: -0.5, z: 0 }, { x: 0.5, y: -0.5, z: 0 },
+        { x: -0.5, y: 0.5, z: 0 }, { x: 0.5, y: 0.5, z: 0 }
+      ];
+      metalRadius = Math.sqrt(3) / 4;
+      gapRadius = (2 - Math.sqrt(3)) / 4;
+    } else if (crystalId === "fcc" && siteType === "tetra") {
+      metals = [
+        { x: -0.25, y: -0.25, z: -0.25 }, { x: 0.25, y: 0.25, z: -0.25 },
+        { x: 0.25, y: -0.25, z: 0.25 }, { x: -0.25, y: 0.25, z: 0.25 }
+      ];
+      metalRadius = Math.sqrt(2) / 4;
+      gapRadius = (Math.sqrt(3) - Math.sqrt(2)) / 4;
+    } else if (crystalId === "fcc") {
+      metals = axisOctahedron(0.5);
+      metalRadius = Math.sqrt(2) / 4;
+      gapRadius = (2 - Math.sqrt(2)) / 4;
+    } else if (siteType === "tetra") {
+      const tetraScale = 1 / (2 * Math.sqrt(2));
+      metals = [
+        { x: tetraScale, y: tetraScale, z: tetraScale },
+        { x: -tetraScale, y: -tetraScale, z: tetraScale },
+        { x: -tetraScale, y: tetraScale, z: -tetraScale },
+        { x: tetraScale, y: -tetraScale, z: -tetraScale }
+      ];
+      metalRadius = 0.5;
+      gapRadius = Math.sqrt(6) / 4 - 0.5;
+    } else {
+      metals = axisOctahedron(1 / Math.sqrt(2));
+      metalRadius = 0.5;
+      gapRadius = 1 / Math.sqrt(2) - 0.5;
+    }
+
+    return { center, metals, metalRadius, gapRadius, elem: siteType === "tetra" ? "TET" : "OCT" };
+  }
+
+  function axisOctahedron(distanceFromCenter) {
+    return [
+      { x: distanceFromCenter, y: 0, z: 0 }, { x: -distanceFromCenter, y: 0, z: 0 },
+      { x: 0, y: distanceFromCenter, z: 0 }, { x: 0, y: -distanceFromCenter, z: 0 },
+      { x: 0, y: 0, z: distanceFromCenter }, { x: 0, y: 0, z: -distanceFromCenter }
+    ];
+  }
+
+  function pickRepresentativeSite(sites, atoms, crystal, siteType, supercell) {
+    if (!sites.length) return null;
+    const center = boundsCenter(atoms);
+    if (crystal.id === "bcc" && siteType === "octa") {
+      const target = {
+        x: center.x,
+        y: supercell === 1 ? center.y - 0.5 : center.y,
+        z: center.z
+      };
+      return [...sites].sort((a, b) => distance(a, target) - distance(b, target))[0];
+    }
+    return [...sites].sort((a, b) => distance(a, center) - distance(b, center))[0];
+  }
+
+  function findNearestMetalAtoms(site, atoms, count) {
+    return atoms
+      .filter((atom) => atom.elem === "M")
+      .map((atom) => ({ atom, gap: distance(site, atom) }))
+      .sort((a, b) => a.gap - b.gap)
+      .slice(0, count)
+      .map((item) => item.atom);
+  }
+
+  function boundsCenter(points) {
+    if (!points.length) return { x: 0, y: 0, z: 0 };
+    const axes = ["x", "y", "z"];
+    return axes.reduce((center, axis) => {
+      const values = points.map((point) => point[axis]);
+      center[axis] = (Math.min(...values) + Math.max(...values)) / 2;
+      return center;
+    }, {});
+  }
+
+  function drawCageEdges(viewer, atoms, color, radius) {
+    const pairs = [];
+    for (let i = 0; i < atoms.length; i += 1) {
+      for (let j = i + 1; j < atoms.length; j += 1) {
+        pairs.push({ start: atoms[i], end: atoms[j], length: distance(atoms[i], atoms[j]) });
+      }
+    }
+    const shortest = Math.min(...pairs.map((pair) => pair.length));
+    pairs
+      .filter((pair) => pair.length <= shortest * 1.22)
+      .forEach((pair) => drawGuide(viewer, pointFrom(pair.start), pointFrom(pair.end), color, radius));
+  }
+
+  function pointFrom(point) {
+    return { x: point.x, y: point.y, z: point.z };
   }
 
   function shouldBond(crystal, a, b) {
@@ -804,4 +1036,5 @@
   }
 
   window.CrystalRenderer = CrystalRenderer;
+  window.InterstitialRenderer = InterstitialRenderer;
 })();

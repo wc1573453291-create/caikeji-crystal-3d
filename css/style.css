@@ -478,6 +478,144 @@ h1 {
   gap: 10px;
 }
 
+.interstitial-detail {
+  padding: 15px 0;
+  border-top: 1px solid var(--line);
+}
+
+.interstitial-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.detail-kicker {
+  margin-bottom: 3px;
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.interstitial-detail-heading h3 {
+  font-size: 17px;
+}
+
+.detail-badge {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: #eef6f4;
+  color: var(--brand-dark);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.interstitial-extract {
+  display: grid;
+  gap: 12px;
+}
+
+.interstitial-viewer-wrap {
+  position: relative;
+  min-height: 210px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f5f9f8;
+  touch-action: none;
+}
+
+.interstitial-viewer {
+  width: 100%;
+  height: 210px;
+}
+
+.interstitial-scale-note {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--muted);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.interstitial-mini-legend {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 10px;
+  max-width: calc(100% - 16px);
+  padding: 5px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #344541;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.interstitial-mini-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.interstitial-mini-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.interstitial-mini-legend .metal-dot {
+  background: #d7b66f;
+}
+
+.interstitial-mini-legend .gap-dot {
+  background: linear-gradient(90deg, #35d0b2 0 50%, #ff8a4c 50% 100%);
+}
+
+.interstitial-mini-legend .distance-line {
+  width: 13px;
+  height: 2px;
+  border-radius: 0;
+  background: #244f49;
+}
+
+.interstitial-metrics {
+  display: grid;
+  gap: 0;
+  align-content: start;
+}
+
+.interstitial-metrics div {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.interstitial-metrics div:first-child {
+  padding-top: 0;
+}
+
+.interstitial-metrics dd {
+  color: var(--brand-dark);
+}
+
+.interstitial-note {
+  margin-top: 10px;
+  color: #445552;
+  font-size: 12px;
+  line-height: 1.58;
+}
+
 dt {
   color: var(--muted);
   font-size: 13px;
@@ -573,5 +711,10 @@ dd {
 
   .toolbar {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .interstitial-extract {
+    grid-template-columns: minmax(190px, 0.95fr) minmax(0, 1.05fr);
+    align-items: stretch;
   }
 }

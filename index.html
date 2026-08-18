@@ -97,6 +97,46 @@
             </div>
           </dl>
 
+          <section class="interstitial-detail" id="interstitialDetail" aria-labelledby="interstitialDetailTitle" hidden>
+            <div class="interstitial-detail-heading">
+              <div>
+                <p class="detail-kicker">局部提取</p>
+                <h3 id="interstitialDetailTitle">典型间隙</h3>
+              </div>
+              <span class="detail-badge" id="interstitialGeometry"></span>
+            </div>
+            <div class="interstitial-extract">
+              <div class="interstitial-viewer-wrap">
+                <div id="interstitialViewer" class="interstitial-viewer" role="img" aria-label="典型间隙局部三维模型"></div>
+                <div class="interstitial-mini-legend" aria-hidden="true">
+                  <span><i class="metal-dot"></i>金属原子 R</span>
+                  <span><i class="gap-dot"></i>间隙原子 r</span>
+                  <span><i class="distance-line"></i>中心距 R+r</span>
+                </div>
+                <span class="interstitial-scale-note">局部图按理论半径比绘制</span>
+              </div>
+              <dl class="interstitial-metrics">
+                <div>
+                  <dt>邻近金属原子</dt>
+                  <dd id="interstitialCoordination"></dd>
+                </div>
+                <div>
+                  <dt>间隙半径比</dt>
+                  <dd id="interstitialRatio"></dd>
+                </div>
+                <div>
+                  <dt>金属原子半径</dt>
+                  <dd id="interstitialMetalRadius"></dd>
+                </div>
+                <div>
+                  <dt>最大间隙半径</dt>
+                  <dd id="interstitialGapRadius"></dd>
+                </div>
+              </dl>
+            </div>
+            <p class="interstitial-note" id="interstitialNote"></p>
+          </section>
+
           <div class="study-block">
             <h3>考研重点</h3>
             <p id="examFocus"></p>

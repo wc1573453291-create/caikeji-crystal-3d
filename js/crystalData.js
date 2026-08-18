@@ -60,9 +60,33 @@ window.CRYSTAL_LIBRARY = {
   "cubic-i": bravais("cubic-i", "体心立方点阵", "Body-Centered Cubic Lattice", "体心立方", "立方晶系", "a=b=c；α=β=γ=90°", "角点加体心点阵点。", [...makeBoxCorners("P"), frac("P", 0.5, 0.5, 0.5)], { a: 1, b: 1, c: 1 }),
   "cubic-f": bravais("cubic-f", "面心立方点阵", "Face-Centered Cubic Lattice", "面心立方", "立方晶系", "a=b=c；α=β=γ=90°", "角点加 6 个面心点阵点。", [...makeBoxCorners("P"), ...faceCenters("P")], { a: 1, b: 1, c: 1 }),
 
-  fcc: withInterstitials(crystal("fcc", "FCC", "面心立方", "Face-Centered Cubic", "Cu、Al、Ni、Ag、Au、γ-Fe", "面心立方点阵", "4", "12", "R=√2a/4", "0.74", "a=b=c；α=β=γ=90°", "{111}", "<110>", "掌握原子数 4、配位数 12、致密度 0.74、密排面 {111} 和密排方向 <110>。", "面心原子不是完整归属一个晶胞；每个面心原子只被 2 个晶胞共有。", "一句话记忆：面心立方最密，十二近邻，四个原子。", [...makeBoxCorners("M"), ...faceCenters("M")], { a: 1, b: 1, c: 1 }, 0.72), "四面体间隙：8 个/晶胞，位于 1/4 型位置；八面体间隙：4 个/晶胞，位于体心和棱心位置。边界间隙由相邻晶胞共享。", { tetra: tetraSites("TET"), octa: [...edgeCenters("OCT"), frac("OCT", 0.5, 0.5, 0.5)] }),
-  bcc: withInterstitials(crystal("bcc", "BCC", "体心立方", "Body-Centered Cubic", "α-Fe、Cr、W、Mo、V", "体心立方点阵", "2", "8", "R=√3a/4", "0.68", "a=b=c；α=β=γ=90°", "无真正密排面；常考较密排面 {110}", "<111>", "掌握原子数 2、配位数 8、致密度 0.68，并理解体对角线方向原子相切。", "BCC 不是密排结构，不要把它的致密度记成 FCC/HCP 的 0.74。", "一句话记忆：体心一颗坐中央，八个角点最近邻。", [...makeBoxCorners("M"), frac("M", 0.5, 0.5, 0.5)], { a: 1, b: 1, c: 1 }, 0.88), "四面体间隙：12 个/晶胞，常在面内 1/4 型位置；八面体间隙：6 个/晶胞，位于面心和棱心位置。边界间隙由相邻晶胞共享。", { tetra: bccTetraSites("TET"), octa: bccOctaSites("OCT") }),
-  hcp: withInterstitials(crystal("hcp", "HCP", "密排六方", "Hexagonal Close-Packed", "Mg、Zn、Ti、Co、α-Zr", "简单六方点阵 + 双原子基元", "6（常规六方晶胞）", "12", "R=a/2；理想 c/a≈1.633", "0.74", "a=b≠c；α=β=90°，γ=120°", "{0001}", "<11-20>", "掌握 ABAB 堆垛、配位数 12、致密度 0.74，以及理想轴比 c/a≈1.633。", "HCP 与 FCC 都是最密堆积；区别是 HCP 为 ABAB，FCC 为 ABCABC。", "一句话记忆：六方密排 ABAB，致密配位同 FCC。", [], { type: "hcp-honeycomb", radius: 1, c: 1.55 }, 0.84), "HCP 中每个原子对应 2 个四面体间隙和 1 个八面体间隙；常规晶胞可记作四面体 12 个、八面体 6 个。", { type: "hcp-honeycomb" }),
+  fcc: withInterstitials(
+    crystal("fcc", "FCC", "面心立方", "Face-Centered Cubic", "Cu、Al、Ni、Ag、Au、γ-Fe", "面心立方点阵", "4", "12", "R=√2a/4", "0.74", "a=b=c；α=β=γ=90°", "{111}", "<110>", "掌握原子数 4、配位数 12、致密度 0.74、密排面 {111} 和密排方向 <110>。", "面心原子不是完整归属一个晶胞；每个面心原子只被 2 个晶胞共有。", "一句话记忆：面心立方最密，十二近邻，四个原子。", [...makeBoxCorners("M"), ...faceCenters("M")], { a: 1, b: 1, c: 1 }, 0.72),
+    "四面体间隙：8 个/晶胞，位于 1/4 型位置；八面体间隙：4 个/晶胞，位于体心和棱心位置。边界间隙由相邻晶胞共享。",
+    { tetra: tetraSites("TET"), octa: [...edgeCenters("OCT"), frac("OCT", 0.5, 0.5, 0.5)] },
+    {
+      tetra: interstitialDetail("典型四面体间隙", "正四面体", "4 个", "r/R=√(3/2)−1≈0.225", Math.sqrt(3 / 2) - 1, "R=√2a/4≈0.354a", "r=(√3−√2)a/4≈0.079a", "间隙中心位于 1/4 型位置。主结构中的绿色间隙球为便于观察而放大，局部图按理论尺寸绘制。"),
+      octa: interstitialDetail("典型八面体间隙", "正八面体", "6 个", "r/R=√2−1≈0.414", Math.sqrt(2) - 1, "R=√2a/4≈0.354a", "r=(2−√2)a/4≈0.146a", "体心位置的八面体间隙由 6 个面心原子包围。主结构中的橙色间隙球为放大示意。")
+    }
+  ),
+  bcc: withInterstitials(
+    crystal("bcc", "BCC", "体心立方", "Body-Centered Cubic", "α-Fe、Cr、W、Mo、V", "体心立方点阵", "2", "8", "R=√3a/4", "0.68", "a=b=c；α=β=γ=90°", "无真正密排面；常考较密排面 {110}", "<111>", "掌握原子数 2、配位数 8、致密度 0.68，并理解体对角线方向原子相切。", "BCC 不是密排结构，不要把它的致密度记成 FCC/HCP 的 0.74。", "一句话记忆：体心一颗坐中央，八个角点最近邻。", [...makeBoxCorners("M"), frac("M", 0.5, 0.5, 0.5)], { a: 1, b: 1, c: 1 }, 0.88),
+    "四面体间隙：12 个/晶胞，常在面内 1/4 型位置；八面体间隙：6 个/晶胞，位于面心和棱心位置。边界间隙由相邻晶胞共享。",
+    { tetra: bccTetraSites("TET"), octa: bccOctaSites("OCT") },
+    {
+      tetra: interstitialDetail("典型四面体间隙", "畸变四面体", "4 个", "r/R=√(5/3)−1≈0.291", Math.sqrt(5 / 3) - 1, "R=√3a/4≈0.433a", "r=(√5−√3)a/4≈0.126a", "BCC 不是密排结构，四面体间隙为畸变四面体；该数值表示不引起晶格畸变时可容纳的最大球半径。"),
+      octa: interstitialDetail("典型八面体间隙", "畸变八面体", "6 个", "r/R=2/√3−1≈0.155", 2 / Math.sqrt(3) - 1, "R=√3a/4≈0.433a", "r=(2−√3)a/4≈0.067a", "BCC 八面体间隙高度畸变，间隙原子只先接触轴向的两个近邻；实际固溶会引起明显晶格畸变。")
+    }
+  ),
+  hcp: withInterstitials(
+    crystal("hcp", "HCP", "密排六方", "Hexagonal Close-Packed", "Mg、Zn、Ti、Co、α-Zr", "简单六方点阵 + 双原子基元", "6（常规六方晶胞）", "12", "R=a/2；理想 c/a≈1.633", "0.74", "a=b≠c；α=β=90°，γ=120°", "{0001}", "<11-20>", "掌握 ABAB 堆垛、配位数 12、致密度 0.74，以及理想轴比 c/a≈1.633。", "HCP 与 FCC 都是最密堆积；区别是 HCP 为 ABAB，FCC 为 ABCABC。", "一句话记忆：六方密排 ABAB，致密配位同 FCC。", [], { type: "hcp-honeycomb", radius: 1, c: 1.55 }, 0.84),
+    "HCP 中每个原子对应 2 个四面体间隙和 1 个八面体间隙；常规晶胞可记作四面体 12 个、八面体 6 个。",
+    { type: "hcp-honeycomb" },
+    {
+      tetra: interstitialDetail("典型四面体间隙", "正四面体", "4 个", "r/R=√(3/2)−1≈0.225", Math.sqrt(3 / 2) - 1, "R=a/2", "r=[√(3/2)−1]a/2≈0.112a", "按理想 HCP 轴比 c/a=√(8/3) 计算；四面体间隙由相邻 A、B 密排层中的 4 个原子围成。"),
+      octa: interstitialDetail("典型八面体间隙", "正八面体", "6 个", "r/R=√2−1≈0.414", Math.sqrt(2) - 1, "R=a/2", "r=(√2−1)a/2≈0.207a", "按理想 HCP 轴比计算；八面体间隙由上下两层各 3 个金属原子围成。")
+    }
+  ),
   "substitutional-solid-solution": crystal("substitutional-solid-solution", "置换固溶体", "置换固溶体", "Substitutional Solid Solution", "Cu-Ni、Cu-Zn、Ag-Au", "母相晶格，溶质原子替代部分基体原子", "", "", "溶质与基体原子半径差通常较小，常以 |rA-rB|/rA < 15% 作为经验条件", "", "", "", "", "理解溶质原子占据原来基体原子的正常晶格位置，晶体点阵总体仍保持母相类型。", "不要把置换固溶体理解成溶质原子挤进空隙；它是替代正常晶格位置。", "一句话记忆：大小相近，替位进入。", substitutionalSolidSolutionAtoms(), { a: 1, b: 1, c: 1 }, 0.72),
   "interstitial-solid-solution": crystal("interstitial-solid-solution", "间隙固溶体", "间隙固溶体", "Interstitial Solid Solution", "C in α-Fe、N in Fe、H in Pd", "母相晶格，较小溶质原子进入晶格间隙", "", "", "溶质原子半径远小于基体原子半径，常见 C、N、H、B 等小原子", "", "", "", "", "理解小溶质原子进入八面体或四面体间隙，会造成晶格畸变并影响强度。", "不要把间隙固溶体画成替代基体原子；它占据的是晶格空隙。", "一句话记忆：小原子，钻空隙。", interstitialSolidSolutionAtoms(), { a: 1, b: 1, c: 1 }, 0.72),
   cscl: crystal("cscl", "CsCl", "氯化铯型", "Cesium Chloride Structure", "CsCl、CsBr、CsI", "简单立方点阵 + 双离子基元", "1 Cs+ + 1 Cl-", "Cs+:8；Cl-:8", "r+ + r- = √3a/2", "", "a=b=c；α=β=γ=90°", "", "", "掌握简单立方阴离子框架与体心阳离子位置，重点区分它不是 BCC 金属结构。", "CsCl 看起来像体心立方，但角点和体心是不同离子，不能按 BCC 等价原子理解。", "一句话记忆：CsCl 中心对八角，八配位。", [...makeBoxCorners("Cl"), frac("Cs", 0.5, 0.5, 0.5)], { a: 1, b: 1, c: 1 }, 0.9),
@@ -80,8 +104,12 @@ function crystal(id, shortName, chineseName, englishName, typicalMaterials, latt
   return { id, shortName, chineseName, englishName, typicalMaterials, latticeType, atomCount, coordinationNumber, radiusRelation, packingFactor, latticeConstants, closePackedPlane, closePackedDirection, examFocus, commonMistake, memoryLine, atoms, lattice, bondDistance };
 }
 
-function withInterstitials(structure, interstitialSummary, interstitialSites) {
-  return { ...structure, interstitialSummary, interstitialSites };
+function withInterstitials(structure, interstitialSummary, interstitialSites, interstitialDetails) {
+  return { ...structure, interstitialSummary, interstitialSites, interstitialDetails };
+}
+
+function interstitialDetail(title, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, note) {
+  return { title, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, note };
 }
 
 function frac(elem, x, y, z) {
