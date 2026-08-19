@@ -47,6 +47,11 @@
     OCT: 0.082
   };
 
+  const INTERSTITIAL_CAGE_COLORS = {
+    tetra: "#a99bff",
+    octa: "#54d6a0"
+  };
+
   const ELEMENT_NAMES = {
     P: "点阵点",
     N: "原子核",
@@ -143,12 +148,12 @@
 
       const cellText = crystal.kind === "concept" ? "概念示意" : (this.options.supercell === 1 ? "1 个晶胞" : "2×2×2 晶胞");
       const hasSelectedSite = Boolean(this.options.selectedInterstitialKey);
-      const siteText = crystal.interstitialSites && this.options.showTetraSites
-        ? ` · 四面体间隙 · ${hasSelectedSite ? "已选中" : "点按小球查看"}`
-        : (crystal.interstitialSites && this.options.showOctaSites
-          ? ` · 八面体间隙 · ${hasSelectedSite ? "已选中" : "点按小球查看"}`
-          : "");
-      this.setStatus(`${crystal.chineseName} · ${cellText}${siteText}`);
+      const siteName = crystal.interstitialSites && this.options.showTetraSites
+        ? "四面体间隙"
+        : (crystal.interstitialSites && this.options.showOctaSites ? "八面体间隙" : "");
+      const selectedText = siteName && hasSelectedSite ? " · 已选中" : "";
+      const actionText = siteName ? (hasSelectedSite ? "再次点按恢复" : "点按小球查看") : "";
+      this.setStatus(`${crystal.chineseName} · ${cellText}${siteName ? ` · ${siteName}` : ""}${selectedText}`, actionText);
     }
 
     updateOptions(nextOptions) {
@@ -228,6 +233,7 @@
       const candidates = buildInterstitialAtoms(crystal, siteType, supercell);
       const detail = crystal.interstitialDetails?.[siteType];
       const color = COLORS[siteType === "tetra" ? "TET" : "OCT"];
+      const cageColor = INTERSTITIAL_CAGE_COLORS[siteType];
       const metalRadius = RADII.M * (this.options.modelStyle === "spacefill" ? 1.58 : 1);
       const radius = Math.max(
         metalRadius * (detail?.ratioValue || 0.2),
@@ -260,9 +266,9 @@
         if (!isExistingAtom) {
           this.viewer.addSphere({ center: pointFrom(atom), radius: metalRadius, color: COLORS.M, opacity: 1 });
         }
-        drawGuide(this.viewer, pointFrom(selectedSite), pointFrom(atom), color, 0.012);
+        drawGuide(this.viewer, pointFrom(selectedSite), pointFrom(atom), cageColor, 0.012);
       });
-      drawCageEdges(this.viewer, neighbors, color, 0.014);
+      drawCageEdges(this.viewer, neighbors, cageColor, 0.014);
 
       this.viewer.addSphere({ center: pointFrom(selectedSite), radius: radius * 1.62, color, opacity: 0.2 });
       if (this.options.showLabels) {
@@ -280,12 +286,13 @@
       if (!this.viewer || !this.currentCrystal) return;
       const view = this.viewer.getView();
       const key = pointKey(site);
-      this.options.selectedInterstitialKey = key;
+      const nextKey = this.options.selectedInterstitialKey === key ? "" : key;
+      this.options.selectedInterstitialKey = nextKey;
       this.render(this.currentCrystal);
       this.viewer.setView(view);
       this.viewer.render();
       if (this.interstitialSelectionHandler) {
-        this.interstitialSelectionHandler({ crystal: this.currentCrystal, siteType, key, site });
+        this.interstitialSelectionHandler({ crystal: this.currentCrystal, siteType, key: nextKey, site });
       }
     }
 
@@ -420,11 +427,16 @@
       const elements = [...new Set(this.currentAtoms.map((atom) => atom.elem))];
       if (this.currentCrystal?.interstitialSites && this.options.showTetraSites) elements.push("TET");
       if (this.currentCrystal?.interstitialSites && this.options.showOctaSites) elements.push("OCT");
-      this.legendElement.innerHTML = elements.map((elem) => {
+      const atomLegend = elements.map((elem) => {
         const color = COLORS[elem] || COLORS.P;
         const name = ELEMENT_NAMES[elem] || elem;
         return `<div class="legend-item"><span class="legend-swatch" style="background:${color}"></span><span>${name}</span></div>`;
       }).join("");
+      const siteType = this.options.showTetraSites ? "tetra" : (this.options.showOctaSites ? "octa" : "");
+      const cageLegend = siteType && this.options.selectedInterstitialKey
+        ? `<div class="legend-item"><span class="legend-line" style="background:${INTERSTITIAL_CAGE_COLORS[siteType]}"></span><span>配位多面体边</span></div>`
+        : "";
+      this.legendElement.innerHTML = atomLegend + cageLegend;
     }
 
     bindTouchGestures() {
@@ -454,8 +466,15 @@
       });
     }
 
-    setStatus(text) {
-      if (this.statusElement) this.statusElement.textContent = text;
+    setStatus(text, actionText = "") {
+      if (!this.statusElement) return;
+      this.statusElement.textContent = text;
+      if (!actionText) return;
+      const action = document.createElement("strong");
+      action.className = "viewer-status-action";
+      action.textContent = actionText;
+      this.statusElement.appendChild(document.createTextNode(" "));
+      this.statusElement.appendChild(action);
     }
   }
 
@@ -491,7 +510,8 @@
       if (!cluster || !detail) return;
 
       this.viewer.clear();
-      drawCageEdges(this.viewer, cluster.metals, "#6f827e", 0.012);
+      const cageColor = INTERSTITIAL_CAGE_COLORS[siteType];
+      drawCageEdges(this.viewer, cluster.metals, cageColor, 0.012);
 
       cluster.metals.forEach((atom) => {
         this.viewer.addSphere({
@@ -500,7 +520,7 @@
           color: COLORS.M,
           opacity: 0.62
         });
-        drawGuide(this.viewer, cluster.center, pointFrom(atom), COLORS[cluster.elem], 0.009);
+        drawGuide(this.viewer, cluster.center, pointFrom(atom), cageColor, 0.009);
       });
 
       this.viewer.addSphere({

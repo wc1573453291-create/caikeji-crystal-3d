@@ -66,6 +66,7 @@
     elements.interstitialGapRadius = document.getElementById("interstitialGapRadius");
     elements.interstitialCenterDistance = document.getElementById("interstitialCenterDistance");
     elements.interstitialRadiusDifference = document.getElementById("interstitialRadiusDifference");
+    elements.interstitialCageSwatch = document.getElementById("interstitialCageSwatch");
     elements.interstitialNote = document.getElementById("interstitialNote");
     elements.examFocus = document.getElementById("examFocus");
     elements.commonMistake = document.getElementById("commonMistake");
@@ -250,6 +251,7 @@
     elements.interstitialGapRadius.textContent = detail.gapRadius;
     elements.interstitialCenterDistance.textContent = detail.centerDistance;
     elements.interstitialRadiusDifference.textContent = detail.radiusDifference;
+    elements.interstitialCageSwatch.style.background = activeType === "tetra" ? "#a99bff" : "#54d6a0";
     elements.interstitialNote.textContent = detail.note;
     requestAnimationFrame(() => interstitialRenderer?.render(crystal, activeType));
   }
