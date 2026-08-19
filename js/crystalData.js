@@ -109,7 +109,8 @@ function withInterstitials(structure, interstitialSummary, interstitialSites, in
 }
 
 function interstitialDetail(title, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, centerDistance, radiusDifference, note) {
-  return { title, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, centerDistance, radiusDifference, note };
+  const displayTitle = title.replace(/^典型/, "");
+  return { title: displayTitle, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, centerDistance, radiusDifference, note };
 }
 
 function frac(elem, x, y, z) {

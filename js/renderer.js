@@ -65,8 +65,8 @@
     B: "B 位离子",
     O: "O2-",
     C: "C / Si / Ge",
-    TET: "典型四面体间隙原子",
-    OCT: "典型八面体间隙原子"
+    TET: "四面体间隙原子",
+    OCT: "八面体间隙原子"
   };
 
   const EDGE_LABEL_BG = "rgba(41,111,126,0.88)";
@@ -80,13 +80,15 @@
       this.viewer = null;
       this.currentAtoms = [];
       this.currentCrystal = null;
+      this.interstitialSelectionHandler = null;
       this.options = {
         showUnitCell: true,
         showLabels: true,
         modelStyle: "stick",
         supercell: 1,
         showTetraSites: false,
-        showOctaSites: false
+        showOctaSites: false,
+        selectedInterstitialKey: ""
       };
     }
 
@@ -103,6 +105,10 @@
       this.bindTouchGestures();
       this.setStatus("拖动旋转，捏合缩放。");
       return true;
+    }
+
+    setInterstitialSelectionHandler(handler) {
+      this.interstitialSelectionHandler = handler;
     }
 
     render(crystal, nextOptions = {}) {
@@ -136,9 +142,12 @@
       this.viewer.render();
 
       const cellText = crystal.kind === "concept" ? "概念示意" : (this.options.supercell === 1 ? "1 个晶胞" : "2×2×2 晶胞");
+      const hasSelectedSite = Boolean(this.options.selectedInterstitialKey);
       const siteText = crystal.interstitialSites && this.options.showTetraSites
-        ? " · 典型四面体间隙"
-        : (crystal.interstitialSites && this.options.showOctaSites ? " · 典型八面体间隙" : "");
+        ? ` · 四面体间隙 · ${hasSelectedSite ? "已选中" : "点按小球查看"}`
+        : (crystal.interstitialSites && this.options.showOctaSites
+          ? ` · 八面体间隙 · ${hasSelectedSite ? "已选中" : "点按小球查看"}`
+          : "");
       this.setStatus(`${crystal.chineseName} · ${cellText}${siteText}`);
     }
 
@@ -217,34 +226,66 @@
       if (!siteType) return;
 
       const candidates = buildInterstitialAtoms(crystal, siteType, supercell);
-      const site = pickRepresentativeSite(candidates, this.currentAtoms, crystal, siteType, supercell);
-      if (!site) return;
-
-      const neighbors = representativeNeighborAtoms(crystal, siteType, site, this.currentAtoms);
       const detail = crystal.interstitialDetails?.[siteType];
-      const color = COLORS[site.elem];
+      const color = COLORS[siteType === "tetra" ? "TET" : "OCT"];
       const metalRadius = RADII.M * (this.options.modelStyle === "spacefill" ? 1.58 : 1);
-      const radius = Math.max(metalRadius * (detail?.ratioValue || 0.2), this.options.modelStyle === "spacefill" ? 0.045 : 0.034);
+      const radius = Math.max(
+        metalRadius * (detail?.ratioValue || 0.2),
+        this.options.modelStyle === "spacefill" ? 0.058 : 0.045
+      );
+      const selectedSite = candidates.find((site) => pointKey(site) === this.options.selectedInterstitialKey);
+
+      if (this.options.selectedInterstitialKey && !selectedSite) {
+        this.options.selectedInterstitialKey = "";
+      }
+
+      candidates.forEach((site) => {
+        const isSelected = selectedSite && samePoint(site, selectedSite);
+        this.viewer.addSphere({
+          center: pointFrom(site),
+          radius: isSelected ? radius * 1.12 : radius,
+          color,
+          opacity: isSelected ? 1 : 0.9,
+          clickable: true,
+          callback: () => this.selectInterstitialSite(siteType, site)
+        });
+      });
+
+      if (!selectedSite) return;
+
+      const neighbors = representativeNeighborAtoms(crystal, siteType, selectedSite, this.currentAtoms);
 
       neighbors.forEach((atom) => {
         const isExistingAtom = this.currentAtoms.some((current) => current.elem === "M" && samePoint(current, atom));
         if (!isExistingAtom) {
           this.viewer.addSphere({ center: pointFrom(atom), radius: metalRadius, color: COLORS.M, opacity: 1 });
         }
-        drawGuide(this.viewer, pointFrom(site), pointFrom(atom), color, 0.012);
+        drawGuide(this.viewer, pointFrom(selectedSite), pointFrom(atom), color, 0.012);
       });
       drawCageEdges(this.viewer, neighbors, color, 0.014);
 
-      this.viewer.addSphere({ center: pointFrom(site), radius, color, opacity: 0.96 });
-      this.viewer.addSphere({ center: pointFrom(site), radius: radius * 1.55, color, opacity: 0.2 });
+      this.viewer.addSphere({ center: pointFrom(selectedSite), radius: radius * 1.62, color, opacity: 0.2 });
       if (this.options.showLabels) {
         this.viewer.addLabel("间隙原子 r", {
-          position: { x: site.x + 0.16, y: site.y + 0.14, z: site.z + 0.14 },
+          position: { x: selectedSite.x + 0.16, y: selectedSite.y + 0.14, z: selectedSite.z + 0.14 },
           fontColor: "#ffffff",
           backgroundColor: siteType === "tetra" ? "rgba(0,113,143,0.94)" : "rgba(176,27,70,0.94)",
           fontSize: 11,
           inFront: true
         });
+      }
+    }
+
+    selectInterstitialSite(siteType, site) {
+      if (!this.viewer || !this.currentCrystal) return;
+      const view = this.viewer.getView();
+      const key = pointKey(site);
+      this.options.selectedInterstitialKey = key;
+      this.render(this.currentCrystal);
+      this.viewer.setView(view);
+      this.viewer.render();
+      if (this.interstitialSelectionHandler) {
+        this.interstitialSelectionHandler({ crystal: this.currentCrystal, siteType, key, site });
       }
     }
 
@@ -576,20 +617,6 @@
     ];
   }
 
-  function pickRepresentativeSite(sites, atoms, crystal, siteType, supercell) {
-    if (!sites.length) return null;
-    const center = boundsCenter(atoms);
-    if (crystal.id === "bcc" && siteType === "octa") {
-      const target = {
-        x: center.x,
-        y: supercell === 1 ? center.y - 0.5 : center.y,
-        z: center.z
-      };
-      return [...sites].sort((a, b) => distance(a, target) - distance(b, target))[0];
-    }
-    return [...sites].sort((a, b) => distance(a, center) - distance(b, center))[0];
-  }
-
   function findNearestMetalAtoms(site, atoms, count) {
     return atoms
       .filter((atom) => atom.elem === "M")
@@ -597,16 +624,6 @@
       .sort((a, b) => a.gap - b.gap)
       .slice(0, count)
       .map((item) => item.atom);
-  }
-
-  function boundsCenter(points) {
-    if (!points.length) return { x: 0, y: 0, z: 0 };
-    const axes = ["x", "y", "z"];
-    return axes.reduce((center, axis) => {
-      const values = points.map((point) => point[axis]);
-      center[axis] = (Math.min(...values) + Math.max(...values)) / 2;
-      return center;
-    }, {});
   }
 
   function drawCageEdges(viewer, atoms, color, radius) {
