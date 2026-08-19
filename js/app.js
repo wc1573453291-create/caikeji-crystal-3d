@@ -18,6 +18,7 @@
   const elements = {};
   let renderer = null;
   let interstitialRenderer = null;
+  let interstitialDiagramRenderer = null;
 
   document.addEventListener("DOMContentLoaded", () => {
     cacheElements();
@@ -33,6 +34,8 @@
       });
       interstitialRenderer = new window.InterstitialRenderer("interstitialViewer");
       interstitialRenderer.init();
+      interstitialDiagramRenderer = new window.InterstitialDiagramRenderer("interstitialDiagram");
+      interstitialDiagramRenderer.init();
       selectCrystal(state.crystalId);
       bindControls();
       handleResize();
@@ -67,6 +70,12 @@
     elements.interstitialCenterDistance = document.getElementById("interstitialCenterDistance");
     elements.interstitialRadiusDifference = document.getElementById("interstitialRadiusDifference");
     elements.interstitialCageSwatch = document.getElementById("interstitialCageSwatch");
+    elements.interstitialDiagram = document.getElementById("interstitialDiagram");
+    elements.interstitialDerivationTitle = document.getElementById("interstitialDerivationTitle");
+    elements.interstitialDiagramCaption = document.getElementById("interstitialDiagramCaption");
+    elements.interstitialDerivationSteps = document.getElementById("interstitialDerivationSteps");
+    elements.interstitialDerivationResult = document.getElementById("interstitialDerivationResult");
+    elements.interstitialDerivationAssumption = document.getElementById("interstitialDerivationAssumption");
     elements.interstitialNote = document.getElementById("interstitialNote");
     elements.examFocus = document.getElementById("examFocus");
     elements.commonMistake = document.getElementById("commonMistake");
@@ -240,6 +249,7 @@
 
     if (!detail) {
       interstitialRenderer?.clear();
+      interstitialDiagramRenderer?.clear();
       return;
     }
 
@@ -253,7 +263,36 @@
     elements.interstitialRadiusDifference.textContent = detail.radiusDifference;
     elements.interstitialCageSwatch.style.background = activeType === "tetra" ? "#a99bff" : "#54d6a0";
     elements.interstitialNote.textContent = detail.note;
-    requestAnimationFrame(() => interstitialRenderer?.render(crystal, activeType));
+    renderInterstitialDerivation(crystal, activeType, detail);
+    requestAnimationFrame(() => {
+      interstitialRenderer?.render(crystal, activeType);
+      interstitialDiagramRenderer?.render(crystal, activeType);
+    });
+  }
+
+  function renderInterstitialDerivation(crystal, siteType, detail) {
+    const derivation = detail.derivation;
+    if (!derivation) return;
+
+    elements.interstitialDerivationTitle.textContent = `${crystal.shortName} · ${derivation.title}`;
+    elements.interstitialDiagramCaption.textContent = [derivation.edgeLabel, derivation.distanceLabel, derivation.secondaryLabel]
+      .filter(Boolean)
+      .join("；");
+    elements.interstitialDerivationSteps.replaceChildren(...derivation.steps.map((item) => {
+      const row = document.createElement("li");
+      const copy = document.createElement("div");
+      const label = document.createElement("strong");
+      const formula = document.createElement("span");
+      copy.className = "derivation-step-copy";
+      label.textContent = item.label;
+      formula.textContent = item.formula;
+      copy.append(label, formula);
+      row.appendChild(copy);
+      return row;
+    }));
+    elements.interstitialDerivationResult.textContent = detail.radiusRatio;
+    elements.interstitialDerivationAssumption.textContent = `计算前提：${derivation.assumption}`;
+    elements.interstitialDiagram.setAttribute("aria-label", `${crystal.chineseName}${siteType === "tetra" ? "四面体" : "八面体"}间隙二维尺寸图`);
   }
 
   function toggleInfoRows(crystal) {
@@ -329,6 +368,7 @@
       renderer.viewer.resize();
       renderer.viewer.render();
       interstitialRenderer?.resize();
+      interstitialDiagramRenderer?.resize();
     }, 120);
   }
 })();

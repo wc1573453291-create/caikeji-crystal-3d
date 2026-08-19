@@ -554,6 +554,305 @@
     }
   }
 
+  class InterstitialDiagramRenderer {
+    constructor(canvasId) {
+      this.canvas = document.getElementById(canvasId);
+      this.context = this.canvas?.getContext("2d") || null;
+      this.currentCrystal = null;
+      this.currentSiteType = "";
+    }
+
+    init() {
+      if (!this.canvas || !this.context) return false;
+      this.clear();
+      return true;
+    }
+
+    clear() {
+      if (!this.context || !this.canvas) return;
+      this.currentCrystal = null;
+      this.currentSiteType = "";
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    resize() {
+      if (this.currentCrystal && this.currentSiteType) {
+        this.render(this.currentCrystal, this.currentSiteType);
+      }
+    }
+
+    render(crystal, siteType) {
+      const derivation = crystal.interstitialDetails?.[siteType]?.derivation;
+      if (!this.context || !derivation) return;
+
+      this.currentCrystal = crystal;
+      this.currentSiteType = siteType;
+      const { width, height } = this.prepareCanvas();
+      const palette = {
+        metal: "#d7b66f",
+        metalDark: "#8f6c2e",
+        gap: siteType === "tetra" ? COLORS.TET : COLORS.OCT,
+        cage: INTERSTITIAL_CAGE_COLORS[siteType],
+        dimension: "#244f49",
+        guide: "#8aa09c",
+        text: "#20312e",
+        background: "#f7faf9"
+      };
+
+      this.context.fillStyle = palette.background;
+      this.context.fillRect(0, 0, width, height);
+      this.drawLegend(width, palette, siteType);
+
+      if (derivation.diagram.includes("tetra")) {
+        this.drawTetrahedron(width, height, palette, derivation, derivation.diagram === "distorted-tetra");
+      } else {
+        this.drawOctahedron(width, height, palette, derivation, derivation.diagram === "distorted-octa");
+      }
+    }
+
+    prepareCanvas() {
+      const cssWidth = Math.max(280, Math.round(this.canvas.getBoundingClientRect().width || 640));
+      const cssHeight = Math.round(cssWidth * 5 / 8);
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      this.canvas.width = Math.round(cssWidth * pixelRatio);
+      this.canvas.height = Math.round(cssHeight * pixelRatio);
+      this.context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      this.context.lineCap = "round";
+      this.context.lineJoin = "round";
+      return { width: cssWidth, height: cssHeight };
+    }
+
+    drawLegend(width, palette, siteType) {
+      const ctx = this.context;
+      const radius = Math.max(5, Math.min(8, width * 0.018));
+      const fontSize = Math.max(10, Math.min(12, width * 0.026));
+      ctx.font = `700 ${fontSize}px system-ui, sans-serif`;
+      ctx.fillStyle = palette.metal;
+      ctx.beginPath();
+      ctx.arc(18, 18, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = palette.text;
+      ctx.fillText("金属原子 R", 18 + radius + 7, 22);
+
+      const secondX = Math.min(width * 0.54, 132);
+      ctx.fillStyle = palette.gap;
+      ctx.beginPath();
+      ctx.arc(secondX, 18, radius * 0.72, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = palette.text;
+      ctx.fillText(siteType === "tetra" ? "四面体间隙 r" : "八面体间隙 r", secondX + radius + 5, 22);
+    }
+
+    drawTetrahedron(width, height, palette, derivation, distorted) {
+      const points = distorted
+        ? [this.p(width, height, 0.50, 0.18), this.p(width, height, 0.16, 0.70), this.p(width, height, 0.84, 0.70), this.p(width, height, 0.50, 0.48)]
+        : [this.p(width, height, 0.50, 0.17), this.p(width, height, 0.20, 0.71), this.p(width, height, 0.80, 0.71), this.p(width, height, 0.62, 0.47)];
+      const center = this.average(points);
+      const edges = [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]];
+
+      edges.forEach(([from, to], index) => {
+        const hidden = index === 4 && !distorted;
+        this.drawLine(points[from], points[to], palette.cage, hidden ? 1.5 : 2.2, hidden ? [5, 5] : []);
+      });
+
+      if (distorted) {
+        this.drawCenterDistance(center, points[0], derivation.distanceLabel, palette, width, -1, false, this.p(width, height, 0.56, 0.36));
+        this.drawDimension(points[1], points[2], derivation.secondaryLabel, { x: 0, y: height * 0.13 }, palette.dimension, width);
+        this.drawShortLabel(this.p(width, height, 0.25, 0.31), derivation.edgeLabel, palette.cage, width);
+      } else {
+        this.drawCenterDistance(center, points[0], derivation.distanceLabel, palette, width, -1);
+        this.drawDimension(points[1], points[2], derivation.edgeLabel, { x: 0, y: height * 0.13 }, palette.dimension, width);
+        if (derivation.secondaryLabel) {
+          this.drawShortLabel({ x: width * 0.79, y: height * 0.31 }, derivation.secondaryLabel, palette.guide, width);
+        }
+      }
+
+      points.forEach((point) => this.drawAtom(point, Math.max(9, width * 0.034), palette.metal, palette.metalDark));
+      this.drawAtom(center, Math.max(5, width * 0.019), palette.gap, palette.gap);
+      this.drawShortLabel(center, "r", palette.gap, width, { x: width * 0.045, y: height * 0.01 });
+    }
+
+    drawOctahedron(width, height, palette, derivation, distorted) {
+      const points = distorted
+        ? [
+            this.p(width, height, 0.50, 0.25), this.p(width, height, 0.50, 0.67),
+            this.p(width, height, 0.13, 0.47), this.p(width, height, 0.87, 0.47),
+            this.p(width, height, 0.50, 0.77), this.p(width, height, 0.50, 0.17)
+          ]
+        : [
+            this.p(width, height, 0.50, 0.15), this.p(width, height, 0.50, 0.80),
+            this.p(width, height, 0.17, 0.48), this.p(width, height, 0.83, 0.48),
+            this.p(width, height, 0.50, 0.66), this.p(width, height, 0.50, 0.31)
+          ];
+      const center = this.p(width, height, 0.50, 0.48);
+      const ring = [2, 5, 3, 4];
+
+      ring.forEach((index, position) => {
+        this.drawLine(points[index], points[ring[(position + 1) % ring.length]], palette.cage, 2.1, index === 5 ? [5, 5] : []);
+        this.drawLine(points[0], points[index], palette.cage, 2.1, index === 5 ? [5, 5] : []);
+        this.drawLine(points[1], points[index], palette.cage, 2.1, index === 5 ? [5, 5] : []);
+      });
+
+      if (distorted) {
+        this.drawCenterDistance(center, points[0], derivation.edgeLabel, palette, width, 1, false, this.p(width, height, 0.66, 0.31));
+        this.drawCenterDistance(center, points[3], derivation.distanceLabel, palette, width, -1, true, this.p(width, height, 0.72, 0.58));
+        this.drawShortLabel({ x: width * 0.74, y: height * 0.78 }, derivation.secondaryLabel, palette.dimension, width);
+      } else {
+        this.drawCenterDistance(center, points[3], derivation.distanceLabel, palette, width, -1);
+        this.drawShortLabel(this.midpoint(points[0], points[3]), derivation.edgeLabel, palette.cage, width, { x: width * 0.02, y: -height * 0.07 });
+        if (derivation.secondaryLabel) {
+          this.drawShortLabel({ x: width * 0.79, y: height * 0.77 }, derivation.secondaryLabel, palette.guide, width);
+        }
+      }
+
+      points.forEach((point) => this.drawAtom(point, Math.max(8, width * 0.029), palette.metal, palette.metalDark));
+      this.drawAtom(center, Math.max(5, width * 0.019), palette.gap, palette.gap);
+      this.drawShortLabel(center, "r", palette.gap, width, { x: width * 0.042, y: height * 0.01 });
+    }
+
+    drawCenterDistance(start, end, label, palette, width, side = 1, dashed = false, labelPoint = null) {
+      this.drawLine(start, end, palette.dimension, 1.7, dashed ? [5, 4] : []);
+      this.drawArrowHead(start, end, palette.dimension, 6);
+      this.drawArrowHead(end, start, palette.dimension, 6);
+      const a = labelPoint || this.midpoint(start, end);
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const offset = labelPoint ? { x: 0, y: 0 } : { x: (-dy / length) * 13 * side, y: (dx / length) * 13 * side };
+      this.drawShortLabel(a, label, palette.dimension, width, offset);
+    }
+
+    drawDimension(start, end, label, offset, color, width) {
+      const shiftedStart = { x: start.x + offset.x, y: start.y + offset.y };
+      const shiftedEnd = { x: end.x + offset.x, y: end.y + offset.y };
+      this.drawLine(start, shiftedStart, "#9aaba7", 1, [3, 4]);
+      this.drawLine(end, shiftedEnd, "#9aaba7", 1, [3, 4]);
+      this.drawLine(shiftedStart, shiftedEnd, color, 1.5);
+      this.drawArrowHead(shiftedStart, shiftedEnd, color, 6);
+      this.drawArrowHead(shiftedEnd, shiftedStart, color, 6);
+      this.drawShortLabel(this.midpoint(shiftedStart, shiftedEnd), label, color, width, { x: 0, y: -10 });
+    }
+
+    drawLine(start, end, color, lineWidth, dash = []) {
+      const ctx = this.context;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.setLineDash(dash);
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    drawArrowHead(tip, tail, color, size) {
+      const ctx = this.context;
+      const angle = Math.atan2(tip.y - tail.y, tip.x - tail.x);
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(tip.x, tip.y);
+      ctx.lineTo(tip.x - size * Math.cos(angle - Math.PI / 6), tip.y - size * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(tip.x - size * Math.cos(angle + Math.PI / 6), tip.y - size * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    drawAtom(point, radius, color, shadowColor) {
+      const ctx = this.context;
+      const gradient = ctx.createRadialGradient(point.x - radius * 0.35, point.y - radius * 0.4, radius * 0.12, point.x, point.y, radius);
+      gradient.addColorStop(0, "#fff6d4");
+      gradient.addColorStop(0.34, color);
+      gradient.addColorStop(1, shadowColor);
+      ctx.save();
+      ctx.shadowColor = "rgba(15,42,39,0.18)";
+      ctx.shadowBlur = radius * 0.5;
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    drawShortLabel(point, text, color, width, offset = { x: 0, y: 0 }) {
+      if (!text) return;
+      const ctx = this.context;
+      const fontSize = Math.max(9, Math.min(12, width * 0.025));
+      ctx.save();
+      ctx.font = `700 ${fontSize}px system-ui, sans-serif`;
+      const maxWidth = width * 0.47;
+      const label = this.fitLabel(text, maxWidth);
+      const metrics = ctx.measureText(label);
+      const boxWidth = metrics.width + 12;
+      const boxHeight = fontSize + 9;
+      let x = point.x + offset.x - boxWidth / 2;
+      let y = point.y + offset.y - boxHeight / 2;
+      x = Math.max(4, Math.min(width - boxWidth - 4, x));
+      y = Math.max(34, y);
+      this.roundedRect(x, y, boxWidth, boxHeight, 5);
+      ctx.fillStyle = "rgba(255,255,255,0.94)";
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, x + boxWidth / 2, y + boxHeight / 2 + 0.5);
+      ctx.restore();
+    }
+
+    fitLabel(text, maxWidth) {
+      let compact = text
+        .replace(/^棱长\s*/, "")
+        .replace(/^中心距\s*/, "")
+        .replace(/^轴向中心距\s*/, "")
+        .replace(/^侧向中心距\s*/, "")
+        .replace(/^四条接触棱\s*/, "")
+        .replace(/^两条相对长棱=/, "长棱 ")
+        .replace(/^最大间隙由\s*/, "")
+        .replace(/\s控制$/, " 控制");
+      if (this.context.measureText(compact).width <= maxWidth) return compact;
+      while (compact.length > 4 && this.context.measureText(`${compact}…`).width > maxWidth) {
+        compact = compact.slice(0, -1);
+      }
+      return `${compact}…`;
+    }
+
+    roundedRect(x, y, width, height, radius) {
+      const ctx = this.context;
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + width - r, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+      ctx.lineTo(x + width, y + height - r);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      ctx.lineTo(x + r, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    p(width, height, x, y) {
+      return { x: width * x, y: height * y };
+    }
+
+    midpoint(a, b) {
+      return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    }
+
+    average(points) {
+      return {
+        x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+        y: points.reduce((sum, point) => sum + point.y, 0) / points.length
+      };
+    }
+  }
+
   function representativeNeighborAtoms(crystal, siteType, site, currentAtoms) {
     if (["fcc", "bcc"].includes(crystal.id)) {
       const cluster = buildInterstitialCluster(crystal.id, siteType);
@@ -1076,4 +1375,5 @@
 
   window.CrystalRenderer = CrystalRenderer;
   window.InterstitialRenderer = InterstitialRenderer;
+  window.InterstitialDiagramRenderer = InterstitialDiagramRenderer;
 })();

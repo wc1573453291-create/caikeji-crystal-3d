@@ -96,6 +96,105 @@ window.CRYSTAL_LIBRARY = {
   diamond: crystal("diamond", "金刚石", "金刚石结构", "Diamond Cubic", "C（金刚石）、Si、Ge、α-Sn", "面心立方点阵 + 双原子基元", "8", "4", "R=√3a/8（共价半径近似）", "约 0.34", "a=b=c；α=β=γ=90°", "", "", "掌握两个 FCC 子晶格沿体对角线错开 1/4，四面体配位和强共价键方向性。", "金刚石不是最密堆积，配位数只有 4，致密度明显小于 FCC/HCP。", "一句话记忆：两个 FCC 错四分之一，四面体共价网络。", [...makeBoxCorners("C"), ...faceCenters("C"), frac("C", 0.25, 0.25, 0.25), frac("C", 0.25, 0.75, 0.75), frac("C", 0.75, 0.25, 0.75), frac("C", 0.75, 0.75, 0.25)], { a: 1.2, b: 1.2, c: 1.2 }, 0.54)
 };
 
+const INTERSTITIAL_DERIVATIONS = {
+  fcc: {
+    tetra: derivation(
+      "regular-tetra",
+      "正四面体中心截面",
+      "棱长 L=2R=a/√2",
+      "中心距 d=√6L/4=√3a/4",
+      "",
+      [
+        step("先求金属原子半径", "面面对角线相切：4R=√2a ⇒ R=√2a/4"),
+        step("写出四面体中心距", "L=2R=a/√2；d=√6L/4=√3a/4"),
+        step("求最大间隙半径", "R+r=d ⇒ r=(√3−√2)a/4"),
+        step("化成半径比", "r/R=(√3−√2)/√2=√(3/2)−1≈0.225")
+      ],
+      "硬球模型；四个金属原子彼此相切，间隙中心到四个顶点等距。"
+    ),
+    octa: derivation(
+      "regular-octa",
+      "正八面体中心截面",
+      "棱长 L=2R=a/√2",
+      "中心距 d=L/√2=a/2",
+      "",
+      [
+        step("先求金属原子半径", "面面对角线相切：4R=√2a ⇒ R=√2a/4"),
+        step("写出八面体中心距", "L=2R=a/√2；d=L/√2=a/2"),
+        step("求最大间隙半径", "R+r=d ⇒ r=(2−√2)a/4"),
+        step("化成半径比", "r/R=(2−√2)/√2=√2−1≈0.414")
+      ],
+      "硬球模型；二维图取穿过四个顶点和间隙中心的正方形截面。"
+    )
+  },
+  bcc: {
+    tetra: derivation(
+      "distorted-tetra",
+      "畸变四面体投影",
+      "四条接触棱 2R=√3a/2",
+      "中心距 d=√5a/4",
+      "两条相对长棱=a",
+      [
+        step("先求金属原子半径", "体对角线相切：4R=√3a ⇒ R=√3a/4"),
+        step("求间隙中心到近邻距离", "d=√[(a/2)²+(a/4)²]=√5a/4"),
+        step("求最大间隙半径", "R+r=d ⇒ r=(√5−√3)a/4"),
+        step("化成半径比", "r/R=(√5−√3)/√3=√(5/3)−1≈0.291")
+      ],
+      "BCC 四面体是畸变四面体；四个近邻到间隙中心等距，但六条棱并不全相等。"
+    ),
+    octa: derivation(
+      "distorted-octa",
+      "畸变八面体控制截面",
+      "轴向中心距 d短=a/2",
+      "侧向中心距 d长=a/√2",
+      "最大间隙由 d短 控制",
+      [
+        step("先求金属原子半径", "体对角线相切：4R=√3a ⇒ R=√3a/4"),
+        step("确定控制距离", "两轴向近邻：d短=a/2；四侧向近邻：d长=a/√2"),
+        step("求最大间隙半径", "R+r=d短 ⇒ r=(2−√3)a/4"),
+        step("化成半径比", "r/R=(2−√3)/√3=2/√3−1≈0.155")
+      ],
+      "BCC 八面体高度畸变；最大硬球先接触轴向两个近邻，因此采用最短中心距计算。"
+    )
+  },
+  hcp: {
+    tetra: derivation(
+      "regular-tetra",
+      "理想 HCP 正四面体截面",
+      "棱长 L=2R=a",
+      "中心距 d=√6a/4",
+      "理想 c/a=√(8/3)",
+      [
+        step("先求金属原子半径", "基面最近邻相切：2R=a ⇒ R=a/2"),
+        step("写出四面体中心距", "L=a；d=√6L/4=√6a/4"),
+        step("求最大间隙半径", "R+r=d ⇒ r=(√6−2)a/4"),
+        step("化成半径比", "r/R=(√6−2)/2=√(3/2)−1≈0.225")
+      ],
+      "按理想 HCP 轴比计算；其局部密排四面体与 FCC 的四面体间隙等价。"
+    ),
+    octa: derivation(
+      "regular-octa",
+      "理想 HCP 正八面体截面",
+      "棱长 L=2R=a",
+      "中心距 d=a/√2",
+      "理想 c/a=√(8/3)",
+      [
+        step("先求金属原子半径", "基面最近邻相切：2R=a ⇒ R=a/2"),
+        step("写出八面体中心距", "L=a；d=L/√2=a/√2"),
+        step("求最大间隙半径", "R+r=d ⇒ r=(√2−1)a/2"),
+        step("化成半径比", "r/R=√2−1≈0.414")
+      ],
+      "按理想 HCP 轴比计算；二维图取正八面体的中心正方形截面。"
+    )
+  }
+};
+
+Object.entries(INTERSTITIAL_DERIVATIONS).forEach(([crystalId, siteDetails]) => {
+  Object.entries(siteDetails).forEach(([siteType, value]) => {
+    window.CRYSTAL_LIBRARY[crystalId].interstitialDetails[siteType].derivation = value;
+  });
+});
+
 function bravais(id, chineseName, englishName, shortName, system, constants, note, atoms, lattice) {
   return { id, kind: "bravais", shortName, chineseName, englishName, typicalMaterials: system, latticeType: shortName, atomCount: "", coordinationNumber: "", radiusRelation: "", packingFactor: "", latticeConstants: constants, closePackedPlane: "", closePackedDirection: "", examFocus: `${note} 晶格常数关系：${constants}`, commonMistake: "空间点阵只描述平移周期性，不等同于具体晶体结构；具体结构还需要基元。", memoryLine: "一句话记忆：先辨晶系，再看简单、体心、面心或底心。", atoms, lattice, bondDistance: 0 };
 }
@@ -111,6 +210,14 @@ function withInterstitials(structure, interstitialSummary, interstitialSites, in
 function interstitialDetail(title, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, centerDistance, radiusDifference, note) {
   const displayTitle = title.replace(/^典型/, "");
   return { title: displayTitle, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, centerDistance, radiusDifference, note };
+}
+
+function derivation(diagram, title, edgeLabel, distanceLabel, secondaryLabel, steps, assumption) {
+  return { diagram, title, edgeLabel, distanceLabel, secondaryLabel, steps, assumption };
+}
+
+function step(label, formula) {
+  return { label, formula };
 }
 
 function frac(elem, x, y, z) {
