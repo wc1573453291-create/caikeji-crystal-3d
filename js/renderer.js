@@ -21,8 +21,8 @@
     B: "#7865d6",
     O: "#d95d50",
     C: "#59636d",
-    TET: "#35d0b2",
-    OCT: "#ff8a4c"
+    TET: "#00d9ff",
+    OCT: "#ff3d71"
   };
 
   const RADII = {
@@ -65,8 +65,8 @@
     B: "B 位离子",
     O: "O2-",
     C: "C / Si / Ge",
-    TET: "典型四面体间隙（放大）",
-    OCT: "典型八面体间隙（放大）"
+    TET: "典型四面体间隙原子",
+    OCT: "典型八面体间隙原子"
   };
 
   const EDGE_LABEL_BG = "rgba(41,111,126,0.88)";
@@ -112,12 +112,12 @@
       this.options = { ...this.options, ...nextOptions };
       this.viewer.clear();
       const effectiveSupercell = crystal.kind === "concept" ? 1 : this.options.supercell;
-      const hasActiveInterstitial = Boolean(crystal.interstitialSites)
-        && (this.options.showTetraSites || this.options.showOctaSites);
+      const isMetalCrystal = ["fcc", "bcc", "hcp"].includes(crystal.id);
       this.currentAtoms = this.buildAtoms(crystal, effectiveSupercell);
 
       this.addAtoms();
-      if (this.options.modelStyle === "stick" && crystal.bondDistance > 0) {
+      const showAtomicBonds = !["fcc", "bcc", "hcp"].includes(crystal.id);
+      if (showAtomicBonds && this.options.modelStyle === "stick" && crystal.bondDistance > 0) {
         this.addBonds(crystal);
       }
       if (this.options.showUnitCell && crystal.lattice) {
@@ -130,8 +130,8 @@
 
       this.updateLegend();
       this.viewer.zoomTo();
-      if (hasActiveInterstitial) {
-        this.viewer.zoom(interstitialZoom(crystal, effectiveSupercell));
+      if (isMetalCrystal) {
+        this.viewer.zoom(metalCrystalZoom(crystal, effectiveSupercell));
       }
       this.viewer.render();
 
@@ -150,8 +150,8 @@
     resetView() {
       if (!this.viewer) return;
       this.viewer.zoomTo();
-      if (this.currentCrystal?.interstitialSites && (this.options.showTetraSites || this.options.showOctaSites)) {
-        this.viewer.zoom(interstitialZoom(this.currentCrystal, this.options.supercell));
+      if (["fcc", "bcc", "hcp"].includes(this.currentCrystal?.id)) {
+        this.viewer.zoom(metalCrystalZoom(this.currentCrystal, this.options.supercell));
       }
       const bccOctaView = this.currentCrystal?.id === "bcc" && this.options.showOctaSites;
       this.viewer.rotate(bccOctaView ? 48 : 18, { x: 1, y: 0, z: 0 });
@@ -198,8 +198,6 @@
     }
 
     addAtoms() {
-      const revealInterstitial = Boolean(this.currentCrystal?.interstitialSites)
-        && (this.options.showTetraSites || this.options.showOctaSites);
       this.currentAtoms.forEach((atom) => {
         const base = RADII[atom.elem] || 0.13;
         const radius = this.options.modelStyle === "spacefill" ? base * 1.58 : base;
@@ -207,7 +205,7 @@
           center: { x: atom.x, y: atom.y, z: atom.z },
           radius,
           color: COLORS[atom.elem] || COLORS.P,
-          opacity: revealInterstitial && atom.elem === "M" ? 0.58 : 1
+          opacity: 1
         });
       });
     }
@@ -223,19 +221,16 @@
       if (!site) return;
 
       const neighbors = representativeNeighborAtoms(crystal, siteType, site, this.currentAtoms);
+      const detail = crystal.interstitialDetails?.[siteType];
       const color = COLORS[site.elem];
-      const radius = crystal.id === "bcc"
-        ? (siteType === "tetra" ? 0.145 : 0.16)
-        : (siteType === "tetra" ? 0.105 : 0.118);
+      const metalRadius = RADII.M * (this.options.modelStyle === "spacefill" ? 1.58 : 1);
+      const radius = Math.max(metalRadius * (detail?.ratioValue || 0.2), this.options.modelStyle === "spacefill" ? 0.045 : 0.034);
 
       neighbors.forEach((atom) => {
-        const atomRadius = RADII.M * (this.options.modelStyle === "spacefill" ? 1.88 : 1.48);
-        this.viewer.addSphere({
-          center: pointFrom(atom),
-          radius: atomRadius,
-          color,
-          opacity: 0.22
-        });
+        const isExistingAtom = this.currentAtoms.some((current) => current.elem === "M" && samePoint(current, atom));
+        if (!isExistingAtom) {
+          this.viewer.addSphere({ center: pointFrom(atom), radius: metalRadius, color: COLORS.M, opacity: 1 });
+        }
         drawGuide(this.viewer, pointFrom(site), pointFrom(atom), color, 0.012);
       });
       drawCageEdges(this.viewer, neighbors, color, 0.014);
@@ -244,9 +239,9 @@
       this.viewer.addSphere({ center: pointFrom(site), radius: radius * 1.55, color, opacity: 0.2 });
       if (this.options.showLabels) {
         this.viewer.addLabel("间隙原子 r", {
-          position: { x: site.x + radius * 1.2, y: site.y + radius * 1.1, z: site.z + radius * 1.3 },
+          position: { x: site.x + 0.16, y: site.y + 0.14, z: site.z + 0.14 },
           fontColor: "#ffffff",
-          backgroundColor: siteType === "tetra" ? "rgba(18,116,99,0.92)" : "rgba(158,67,25,0.92)",
+          backgroundColor: siteType === "tetra" ? "rgba(0,113,143,0.94)" : "rgba(176,27,70,0.94)",
           fontSize: 11,
           inFront: true
         });
@@ -482,6 +477,13 @@
 
       const nearestMetal = [...cluster.metals].sort((a, b) => distance(cluster.center, a) - distance(cluster.center, b))[0];
       drawGuide(this.viewer, cluster.center, pointFrom(nearestMetal), "#244f49", 0.015);
+      this.viewer.addLabel("d=R+r", {
+        position: add(midpoint(cluster.center, nearestMetal), { x: 0, y: -cluster.metalRadius * 0.48, z: cluster.metalRadius * 0.42 }),
+        fontColor: "#ffffff",
+        backgroundColor: "rgba(36,79,73,0.9)",
+        fontSize: 10,
+        inFront: true
+      });
       this.viewer.resize();
       this.viewer.zoomTo();
       this.viewer.rotate(16, { x: 1, y: 0, z: 0 });
@@ -508,7 +510,7 @@
     return findNearestMetalAtoms(site, currentAtoms, siteType === "tetra" ? 4 : 6);
   }
 
-  function interstitialZoom(crystal, supercell) {
+  function metalCrystalZoom(crystal, supercell) {
     if (supercell === 2) return 1.28;
     if (crystal?.id === "bcc") return 4.2;
     if (crystal?.id === "hcp") return 3.5;

@@ -58,6 +58,8 @@
     elements.interstitialRatio = document.getElementById("interstitialRatio");
     elements.interstitialMetalRadius = document.getElementById("interstitialMetalRadius");
     elements.interstitialGapRadius = document.getElementById("interstitialGapRadius");
+    elements.interstitialCenterDistance = document.getElementById("interstitialCenterDistance");
+    elements.interstitialRadiusDifference = document.getElementById("interstitialRadiusDifference");
     elements.interstitialNote = document.getElementById("interstitialNote");
     elements.examFocus = document.getElementById("examFocus");
     elements.commonMistake = document.getElementById("commonMistake");
@@ -232,6 +234,8 @@
     elements.interstitialRatio.textContent = detail.radiusRatio;
     elements.interstitialMetalRadius.textContent = detail.metalRadius;
     elements.interstitialGapRadius.textContent = detail.gapRadius;
+    elements.interstitialCenterDistance.textContent = detail.centerDistance;
+    elements.interstitialRadiusDifference.textContent = detail.radiusDifference;
     elements.interstitialNote.textContent = detail.note;
     requestAnimationFrame(() => interstitialRenderer?.render(crystal, activeType));
   }

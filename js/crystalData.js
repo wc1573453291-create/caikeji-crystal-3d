@@ -65,8 +65,8 @@ window.CRYSTAL_LIBRARY = {
     "四面体间隙：8 个/晶胞，位于 1/4 型位置；八面体间隙：4 个/晶胞，位于体心和棱心位置。边界间隙由相邻晶胞共享。",
     { tetra: tetraSites("TET"), octa: [...edgeCenters("OCT"), frac("OCT", 0.5, 0.5, 0.5)] },
     {
-      tetra: interstitialDetail("典型四面体间隙", "正四面体", "4 个", "r/R=√(3/2)−1≈0.225", Math.sqrt(3 / 2) - 1, "R=√2a/4≈0.354a", "r=(√3−√2)a/4≈0.079a", "间隙中心位于 1/4 型位置。主结构中的绿色间隙球为便于观察而放大，局部图按理论尺寸绘制。"),
-      octa: interstitialDetail("典型八面体间隙", "正八面体", "6 个", "r/R=√2−1≈0.414", Math.sqrt(2) - 1, "R=√2a/4≈0.354a", "r=(2−√2)a/4≈0.146a", "体心位置的八面体间隙由 6 个面心原子包围。主结构中的橙色间隙球为放大示意。")
+      tetra: interstitialDetail("典型四面体间隙", "正四面体", "4 个", "r/R=√(3/2)−1≈0.225", Math.sqrt(3 / 2) - 1, "R=√2a/4≈0.354a", "r=(√3−√2)a/4≈0.079a", "d=R+r=√3a/4≈0.433a", "R−r=(2√2−√3)a/4≈0.274a；r 比 R 小 77.5%", "间隙中心位于 1/4 型位置。主结构仅用小型高亮球定位，理论尺寸以局部提取图为准。"),
+      octa: interstitialDetail("典型八面体间隙", "正八面体", "6 个", "r/R=√2−1≈0.414", Math.sqrt(2) - 1, "R=√2a/4≈0.354a", "r=(2−√2)a/4≈0.146a", "d=R+r=a/2=0.500a", "R−r=(√2−1)a/2≈0.207a；r 比 R 小 58.6%", "体心位置的八面体间隙由 6 个面心原子包围。主结构仅用小型高亮球定位。")
     }
   ),
   bcc: withInterstitials(
@@ -74,8 +74,8 @@ window.CRYSTAL_LIBRARY = {
     "四面体间隙：12 个/晶胞，常在面内 1/4 型位置；八面体间隙：6 个/晶胞，位于面心和棱心位置。边界间隙由相邻晶胞共享。",
     { tetra: bccTetraSites("TET"), octa: bccOctaSites("OCT") },
     {
-      tetra: interstitialDetail("典型四面体间隙", "畸变四面体", "4 个", "r/R=√(5/3)−1≈0.291", Math.sqrt(5 / 3) - 1, "R=√3a/4≈0.433a", "r=(√5−√3)a/4≈0.126a", "BCC 不是密排结构，四面体间隙为畸变四面体；该数值表示不引起晶格畸变时可容纳的最大球半径。"),
-      octa: interstitialDetail("典型八面体间隙", "畸变八面体", "6 个", "r/R=2/√3−1≈0.155", 2 / Math.sqrt(3) - 1, "R=√3a/4≈0.433a", "r=(2−√3)a/4≈0.067a", "BCC 八面体间隙高度畸变，间隙原子只先接触轴向的两个近邻；实际固溶会引起明显晶格畸变。")
+      tetra: interstitialDetail("典型四面体间隙", "畸变四面体", "4 个", "r/R=√(5/3)−1≈0.291", Math.sqrt(5 / 3) - 1, "R=√3a/4≈0.433a", "r=(√5−√3)a/4≈0.126a", "d=R+r=√5a/4≈0.559a", "R−r=(2√3−√5)a/4≈0.307a；r 比 R 小 70.9%", "BCC 不是密排结构，四面体间隙为畸变四面体；该数值表示不引起晶格畸变时可容纳的最大球半径。"),
+      octa: interstitialDetail("典型八面体间隙", "畸变八面体", "6 个", "r/R=2/√3−1≈0.155", 2 / Math.sqrt(3) - 1, "R=√3a/4≈0.433a", "r=(2−√3)a/4≈0.067a", "最短 d=R+r=a/2=0.500a", "R−r=(√3−1)a/2≈0.366a；r 比 R 小 84.5%", "BCC 八面体间隙高度畸变，间隙原子只先接触轴向的两个近邻；实际固溶会引起明显晶格畸变。")
     }
   ),
   hcp: withInterstitials(
@@ -83,8 +83,8 @@ window.CRYSTAL_LIBRARY = {
     "HCP 中每个原子对应 2 个四面体间隙和 1 个八面体间隙；常规晶胞可记作四面体 12 个、八面体 6 个。",
     { type: "hcp-honeycomb" },
     {
-      tetra: interstitialDetail("典型四面体间隙", "正四面体", "4 个", "r/R=√(3/2)−1≈0.225", Math.sqrt(3 / 2) - 1, "R=a/2", "r=[√(3/2)−1]a/2≈0.112a", "按理想 HCP 轴比 c/a=√(8/3) 计算；四面体间隙由相邻 A、B 密排层中的 4 个原子围成。"),
-      octa: interstitialDetail("典型八面体间隙", "正八面体", "6 个", "r/R=√2−1≈0.414", Math.sqrt(2) - 1, "R=a/2", "r=(√2−1)a/2≈0.207a", "按理想 HCP 轴比计算；八面体间隙由上下两层各 3 个金属原子围成。")
+      tetra: interstitialDetail("典型四面体间隙", "正四面体", "4 个", "r/R=√(3/2)−1≈0.225", Math.sqrt(3 / 2) - 1, "R=a/2", "r=[√(3/2)−1]a/2≈0.112a", "d=R+r=√6a/4≈0.612a", "R−r=[2−√(3/2)]a/2≈0.388a；r 比 R 小 77.5%", "按理想 HCP 轴比 c/a=√(8/3) 计算；四面体间隙由相邻 A、B 密排层中的 4 个原子围成。"),
+      octa: interstitialDetail("典型八面体间隙", "正八面体", "6 个", "r/R=√2−1≈0.414", Math.sqrt(2) - 1, "R=a/2", "r=(√2−1)a/2≈0.207a", "d=R+r=a/√2≈0.707a", "R−r=(2−√2)a/2≈0.293a；r 比 R 小 58.6%", "按理想 HCP 轴比计算；八面体间隙由上下两层各 3 个金属原子围成。")
     }
   ),
   "substitutional-solid-solution": crystal("substitutional-solid-solution", "置换固溶体", "置换固溶体", "Substitutional Solid Solution", "Cu-Ni、Cu-Zn、Ag-Au", "母相晶格，溶质原子替代部分基体原子", "", "", "溶质与基体原子半径差通常较小，常以 |rA-rB|/rA < 15% 作为经验条件", "", "", "", "", "理解溶质原子占据原来基体原子的正常晶格位置，晶体点阵总体仍保持母相类型。", "不要把置换固溶体理解成溶质原子挤进空隙；它是替代正常晶格位置。", "一句话记忆：大小相近，替位进入。", substitutionalSolidSolutionAtoms(), { a: 1, b: 1, c: 1 }, 0.72),
@@ -108,8 +108,8 @@ function withInterstitials(structure, interstitialSummary, interstitialSites, in
   return { ...structure, interstitialSummary, interstitialSites, interstitialDetails };
 }
 
-function interstitialDetail(title, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, note) {
-  return { title, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, note };
+function interstitialDetail(title, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, centerDistance, radiusDifference, note) {
+  return { title, geometry, coordination, radiusRatio, ratioValue, metalRadius, gapRadius, centerDistance, radiusDifference, note };
 }
 
 function frac(elem, x, y, z) {
