@@ -33,8 +33,8 @@ window.CRYSTAL_CATEGORIES = [
   {
     id: "ionic",
     name: "离子晶体",
-    subtitle: "CsCl / NaCl / CaF2 / 钙钛矿",
-    structures: ["cscl", "nacl", "caf2", "perovskite"]
+    subtitle: "8 种典型结构",
+    structures: ["cscl", "nacl", "caf2", "perovskite", "zincblende", "wurtzite", "rutile", "spinel"]
   },
   {
     id: "covalent",
@@ -93,6 +93,10 @@ window.CRYSTAL_LIBRARY = {
   nacl: crystal("nacl", "NaCl", "氯化钠型", "Rock Salt Structure", "NaCl、KCl、MgO、CaO", "面心立方点阵 + 双离子基元", "4 Na+ + 4 Cl-", "Na+:6；Cl-:6", "r+ + r- = a/2", "", "a=b=c；α=β=γ=90°", "", "", "掌握两套互穿的 FCC 子晶格，阴、阳离子均为 6 配位，常用于判断八面体间隙占位。", "NaCl 是 6:6 配位，不是 CsCl 的 8:8 配位；观察时要看最近的异号离子。", "一句话记忆：NaCl 是 FCC 骨架填八面体，六配位。", [...makeBoxCorners("Cl"), ...faceCenters("Cl"), ...edgeCenters("Na"), frac("Na", 0.5, 0.5, 0.5)], { a: 1.28, b: 1.28, c: 1.28 }, 0.66),
   caf2: crystal("caf2", "CaF2", "萤石结构", "Fluorite Structure", "CaF2、UO2、ThO2", "面心立方点阵 + 三离子基元", "4 Ca2+ + 8 F-", "Ca2+:8；F-:4", "r+ + r- = √3a/4", "", "a=b=c；α=β=γ=90°", "", "", "掌握 Ca2+ 构成 FCC 骨架，F- 占据全部四面体间隙，配位关系为 8:4。", "不要把萤石结构和反萤石结构混淆；CaF2 中小阴离子在四面体间隙。", "一句话记忆：钙成面心，氟填四面体。", [...makeBoxCorners("Ca"), ...faceCenters("Ca"), ...tetraSites("F")], { a: 1.28, b: 1.28, c: 1.28 }, 0.58),
   perovskite: crystal("perovskite", "钙钛矿", "钙钛矿结构", "Perovskite Structure", "CaTiO3、BaTiO3、SrTiO3、MAPbI3", "简单立方点阵 + ABO3 基元", "1 A + 1 B + 3 O", "A位:12；B位:6", "理想立方中 B-O 距离=a/2", "", "理想立方：a=b=c；α=β=γ=90°", "", "", "掌握 A 位在角点、B 位在体心、O 位在面心，B 离子形成 BO6 八面体。", "容易把 A、B 位颠倒；记住体心 B 周围最近的是 6 个 O。", "一句话记忆：A 在角，B 居中，氧在面心围八面体。", [...makeBoxCorners("A"), frac("B", 0.5, 0.5, 0.5), frac("O", 0.5, 0.5, 0), frac("O", 0.5, 0, 0.5), frac("O", 0, 0.5, 0.5), frac("O", 0.5, 0.5, 1), frac("O", 0.5, 1, 0.5), frac("O", 1, 0.5, 0.5)], { a: 1.25, b: 1.25, c: 1.25 }, 0.64),
+  zincblende: crystal("zincblende", "立方 ZnS", "立方 ZnS（闪锌矿）", "Zinc Blende (Sphalerite) Structure", "ZnS、ZnSe、GaAs、InP", "面心立方点阵 + ZnS 双离子基元", "4 Zn2+ + 4 S2-", "Zn2+:4；S2-:4", "r+ + r- = √3a/4", "", "a=b=c；α=β=γ=90°", "", "", "掌握 S2- 构成 FCC 骨架，Zn2+ 占据一半四面体间隙；每种离子都是四面体配位，堆垛为 ABCABC。", "闪锌矿只占一半四面体间隙；若全部占满则会变成类似 CaF2 的 1:2 结构。", "一句话记忆：硫成面心，锌占一半四面体，四配位。", zincblendeAtoms(), { a: 1.25, b: 1.25, c: 1.25 }, 0.56),
+  wurtzite: crystal("wurtzite", "六方 ZnS", "六方 ZnS（纤锌矿）", "Wurtzite Structure", "ZnS、ZnO、CdS、GaN、AlN", "简单六方点阵 + 2 个 ZnS 基元", "原胞：2 Zn2+ + 2 S2-", "Zn2+:4；S2-:4", "理想结构：u=3/8，c/a=√(8/3)≈1.633", "", "a=b≠c；α=β=90°，γ=120°", "", "", "掌握 S2- 的六方密排 ABAB 堆垛，Zn2+ 占据一半四面体间隙；局部配位与闪锌矿相同。", "纤锌矿和闪锌矿都是 4:4 配位，主要差别是前者 ABAB、后者 ABCABC。", "一句话记忆：四配位不变，六方纤锌矿是 ABAB。", [], { type: "wurtzite-honeycomb", radius: 1, c: Math.sqrt(8 / 3), u: 3 / 8 }, 0.67),
+  rutile: crystal("rutile", "金红石", "TiO2（金红石型）", "Rutile Structure", "TiO2、SnO2、GeO2、MnO2", "简单四方点阵 + 2 个 TiO2 基元", "2 Ti4+ + 4 O2-", "Ti4+:6；O2-:3", "TiO6 为轻微畸变八面体，键长由 a、c 和氧参数 u 决定", "", "a=b≠c；α=β=γ=90°；u≈0.305", "", "", "掌握 Ti4+ 位于畸变 O2- 八面体中心，TiO6 八面体沿 c 轴共棱连接；一个晶胞含 2 个 TiO2。", "金红石不是立方结构，也不要把 O2- 的配位数误记成 6；氧只连接 3 个 Ti4+。", "一句话记忆：四方金红石，钛六氧三，八面体沿 c 共棱。", rutileAtoms(), { a: 1.2, b: 1.2, c: 0.773, oxygenParameter: 0.305 }, 0.57),
+  spinel: crystal("spinel", "尖晶石", "MgAl2O4（尖晶石型）", "Normal Spinel Structure", "MgAl2O4、ZnAl2O4、CoAl2O4", "面心立方氧骨架 + Mg/Al 间隙基元", "8 Mg2+ + 16 Al3+ + 32 O2-", "Mg2+:4；Al3+:6；O2-:4", "Mg2+ 占 1/8 四面体间隙；Al3+ 占 1/2 八面体间隙", "", "a=b=c；α=β=γ=90°；氧参数 u≈0.262", "", "", "掌握 O2- 构成立方密排骨架，正常尖晶石中 Mg2+ 在四面体位、Al3+ 在八面体位，常规晶胞含 8 个 MgAl2O4。", "正常尖晶石与反尖晶石的阳离子占位不同；不能只看化学式判断四面体位上是哪种离子。", "一句话记忆：氧作面心骨架，镁进四面体，铝进八面体。", spinelAtoms(), { a: 1.4, b: 1.4, c: 1.4, oxygenParameter: 0.2625 }, 0.43),
   diamond: crystal("diamond", "金刚石", "金刚石结构", "Diamond Cubic", "C（金刚石）、Si、Ge、α-Sn", "面心立方点阵 + 双原子基元", "8", "4", "R=√3a/8（共价半径近似）", "约 0.34", "a=b=c；α=β=γ=90°", "", "", "掌握两个 FCC 子晶格沿体对角线错开 1/4，四面体配位和强共价键方向性。", "金刚石不是最密堆积，配位数只有 4，致密度明显小于 FCC/HCP。", "一句话记忆：两个 FCC 错四分之一，四面体共价网络。", [...makeBoxCorners("C"), ...faceCenters("C"), frac("C", 0.25, 0.25, 0.25), frac("C", 0.25, 0.75, 0.75), frac("C", 0.75, 0.25, 0.75), frac("C", 0.75, 0.75, 0.25)], { a: 1.2, b: 1.2, c: 1.2 }, 0.54)
 };
 
@@ -303,4 +307,87 @@ function interstitialSolidSolutionAtoms() {
     frac("I", 0.5, 0, 0),
     frac("I", 0, 0.5, 0)
   ];
+}
+
+function zincblendeAtoms() {
+  return [
+    ...makeBoxCorners("Su"),
+    ...faceCenters("Su"),
+    frac("Zn", 0.25, 0.25, 0.25),
+    frac("Zn", 0.25, 0.75, 0.75),
+    frac("Zn", 0.75, 0.25, 0.75),
+    frac("Zn", 0.75, 0.75, 0.25)
+  ];
+}
+
+function rutileAtoms() {
+  const u = 0.305;
+  return [
+    ...makeBoxCorners("Ti"),
+    frac("Ti", 0.5, 0.5, 0.5),
+    frac("O", u, u, 0),
+    frac("O", 1 - u, 1 - u, 0),
+    frac("O", u, u, 1),
+    frac("O", 1 - u, 1 - u, 1),
+    frac("O", 0.5 + u, 0.5 - u, 0.5),
+    frac("O", 0.5 - u, 0.5 + u, 0.5)
+  ];
+}
+
+function spinelAtoms() {
+  const u = 0.2625;
+  // Expand the 14-ion FCC primitive basis into the 56-ion conventional cubic cell.
+  const base = [
+    frac("Mg", 3 / 8, 3 / 8, 3 / 8),
+    frac("Mg", 5 / 8, 5 / 8, 5 / 8),
+    frac("Al", 0, 0, 0),
+    frac("Al", 1 / 4, 1 / 4, 0),
+    frac("Al", 1 / 4, 0, 1 / 4),
+    frac("Al", 0, 1 / 4, 1 / 4),
+    frac("O", u, u, u),
+    frac("O", 1 / 4 - u, 1 / 4 - u, u),
+    frac("O", 1 / 4 - u, u, 1 / 4 - u),
+    frac("O", u, 1 / 4 - u, 1 / 4 - u),
+    frac("O", u + 1 / 4, u + 1 / 4, -u),
+    frac("O", -u, -u, -u),
+    frac("O", u + 1 / 4, -u, u + 1 / 4),
+    frac("O", -u, u + 1 / 4, u + 1 / 4)
+  ];
+  const translations = [[0, 0, 0], [0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]];
+  const conventional = [];
+  const seen = new Set();
+
+  translations.forEach(([tx, ty, tz]) => {
+    base.forEach((atom) => {
+      const point = frac(atom.elem, wrapFraction(atom.x + tx), wrapFraction(atom.y + ty), wrapFraction(atom.z + tz));
+      const key = `${point.elem}:${point.x.toFixed(6)},${point.y.toFixed(6)},${point.z.toFixed(6)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      conventional.push(point);
+    });
+  });
+
+  return addBoundaryImages(conventional);
+}
+
+function addBoundaryImages(atoms) {
+  const expanded = [];
+  const seen = new Set();
+  atoms.forEach((atom) => {
+    const xValues = atom.x === 0 ? [0, 1] : [atom.x];
+    const yValues = atom.y === 0 ? [0, 1] : [atom.y];
+    const zValues = atom.z === 0 ? [0, 1] : [atom.z];
+    xValues.forEach((x) => yValues.forEach((y) => zValues.forEach((z) => {
+      const key = `${atom.elem}:${x.toFixed(6)},${y.toFixed(6)},${z.toFixed(6)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      expanded.push(frac(atom.elem, x, y, z));
+    })));
+  });
+  return expanded;
+}
+
+function wrapFraction(value) {
+  const wrapped = value % 1;
+  return wrapped < 0 ? wrapped + 1 : wrapped;
 }

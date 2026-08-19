@@ -492,6 +492,10 @@ h1 {
   gap: 10px;
 }
 
+.info-grid div[hidden] {
+  display: none;
+}
+
 .info-grid dd {
   min-width: 0;
   overflow-wrap: anywhere;

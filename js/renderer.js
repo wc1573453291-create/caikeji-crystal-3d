@@ -20,6 +20,11 @@
     A: "#d49b38",
     B: "#7865d6",
     O: "#d95d50",
+    Zn: "#4f9ac8",
+    Su: "#e5c34f",
+    Ti: "#7180d8",
+    Mg: "#e7a44c",
+    Al: "#9b87d5",
     C: "#59636d",
     TET: "#00d9ff",
     OCT: "#ff3d71"
@@ -42,6 +47,11 @@
     A: 0.15,
     B: 0.13,
     O: 0.105,
+    Zn: 0.13,
+    Su: 0.165,
+    Ti: 0.13,
+    Mg: 0.145,
+    Al: 0.12,
     C: 0.12,
     TET: 0.07,
     OCT: 0.082
@@ -69,6 +79,11 @@
     A: "A 位离子",
     B: "B 位离子",
     O: "O2-",
+    Zn: "Zn2+",
+    Su: "S2-",
+    Ti: "Ti4+",
+    Mg: "Mg2+",
+    Al: "Al3+",
     C: "C / Si / Ge",
     TET: "四面体间隙原子",
     OCT: "八面体间隙原子"
@@ -127,7 +142,10 @@
       this.currentAtoms = this.buildAtoms(crystal, effectiveSupercell);
 
       this.addAtoms();
-      const showAtomicBonds = !["fcc", "bcc", "hcp"].includes(crystal.id);
+      const showAtomicBonds = ![
+        "fcc", "bcc", "hcp",
+        "substitutional-solid-solution", "interstitial-solid-solution"
+      ].includes(crystal.id);
       if (showAtomicBonds && this.options.modelStyle === "stick" && crystal.bondDistance > 0) {
         this.addBonds(crystal);
       }
@@ -143,6 +161,8 @@
       this.viewer.zoomTo();
       if (isMetalCrystal) {
         this.viewer.zoom(metalCrystalZoom(crystal, effectiveSupercell));
+      } else {
+        this.viewer.zoom(teachingStructureZoom(crystal, effectiveSupercell));
       }
       this.viewer.render();
 
@@ -166,6 +186,8 @@
       this.viewer.zoomTo();
       if (["fcc", "bcc", "hcp"].includes(this.currentCrystal?.id)) {
         this.viewer.zoom(metalCrystalZoom(this.currentCrystal, this.options.supercell));
+      } else {
+        this.viewer.zoom(teachingStructureZoom(this.currentCrystal, this.options.supercell));
       }
       const bccOctaView = this.currentCrystal?.id === "bcc" && this.options.showOctaSites;
       this.viewer.rotate(bccOctaView ? 48 : 18, { x: 1, y: 0, z: 0 });
@@ -179,6 +201,9 @@
       }
       if (crystal.lattice?.type === "hcp-honeycomb") {
         return buildHcpHoneycombAtoms(crystal.lattice, supercell);
+      }
+      if (crystal.lattice?.type === "wurtzite-honeycomb") {
+        return buildWurtziteHoneycombAtoms(crystal.lattice, supercell);
       }
 
       const atoms = [];
@@ -317,7 +342,7 @@
         drawHexPrimitiveSupercell(this.viewer, crystal.lattice, supercell);
         return;
       }
-      if (crystal.lattice?.type === "hcp-honeycomb") {
+      if (["hcp-honeycomb", "wurtzite-honeycomb"].includes(crystal.lattice?.type)) {
         drawHcpHoneycombSupercell(this.viewer, crystal.lattice, supercell);
         return;
       }
@@ -877,6 +902,26 @@
     return 3;
   }
 
+  function teachingStructureZoom(crystal, supercell) {
+    const singleCellZoom = {
+      zincblende: 3.1,
+      wurtzite: 2.7,
+      rutile: 3.5,
+      spinel: 2.45,
+      "substitutional-solid-solution": 3.2,
+      "interstitial-solid-solution": 3.2
+    };
+    const expandedZoom = {
+      zincblende: 1.65,
+      wurtzite: 1.5,
+      rutile: 1.8,
+      spinel: 1.35,
+      "substitutional-solid-solution": 1.7,
+      "interstitial-solid-solution": 1.7
+    };
+    return (supercell === 2 ? expandedZoom : singleCellZoom)[crystal?.id] || 1;
+  }
+
   function buildInterstitialCluster(crystalId, siteType) {
     const center = { x: 0, y: 0, z: 0 };
     let metals;
@@ -965,10 +1010,17 @@
   function shouldBond(crystal, a, b) {
     if (samePoint(a, b)) return false;
     if (distance(a, b) > crystal.bondDistance) return false;
-    if (["nacl", "cscl", "caf2", "perovskite"].includes(crystal.id) && a.elem === b.elem) return false;
+    if (["nacl", "cscl", "caf2", "perovskite", "zincblende", "wurtzite", "rutile", "spinel"].includes(crystal.id) && a.elem === b.elem) return false;
     if (crystal.id === "perovskite" && ![a.elem, b.elem].includes("B")) return false;
+    if (["zincblende", "wurtzite"].includes(crystal.id) && !isElementPair(a, b, "Zn", "Su")) return false;
+    if (crystal.id === "rutile" && !isElementPair(a, b, "Ti", "O")) return false;
+    if (crystal.id === "spinel" && !(isElementPair(a, b, "Mg", "O") || isElementPair(a, b, "Al", "O"))) return false;
     if (crystal.id === "diamond" && a.elem !== b.elem) return false;
     return true;
+  }
+
+  function isElementPair(a, b, first, second) {
+    return (a.elem === first && b.elem === second) || (a.elem === second && b.elem === first);
   }
 
   function buildInterstitialAtoms(crystal, siteType, supercell) {
@@ -1046,6 +1098,32 @@
       for (let k = 0; k < supercell; k += 1) {
         const z = k * c + c / 2;
         hcpBLayerAtoms(lattice, center, z).forEach((point) => addUniqueAtom(atoms, seen, "M", point));
+      }
+    });
+
+    return atoms;
+  }
+
+  function buildWurtziteHoneycombAtoms(lattice, supercell) {
+    const atoms = [];
+    const seen = new Set();
+    const centers = hcpHoneycombCenters(lattice, supercell);
+    const c = lattice.c || Math.sqrt(8 / 3);
+    const u = lattice.u || 3 / 8;
+
+    centers.forEach((center) => {
+      for (let k = 0; k <= supercell; k += 1) {
+        const z = k * c;
+        hcpHexVertices(lattice, center, z).forEach((point) => addUniqueAtom(atoms, seen, "Zn", point));
+        addUniqueAtom(atoms, seen, "Zn", { x: center.x, y: center.y, z });
+      }
+
+      for (let k = 0; k < supercell; k += 1) {
+        const baseZ = k * c;
+        hcpHexVertices(lattice, center, baseZ + u * c).forEach((point) => addUniqueAtom(atoms, seen, "Su", point));
+        addUniqueAtom(atoms, seen, "Su", { x: center.x, y: center.y, z: baseZ + u * c });
+        hcpBLayerAtoms(lattice, center, baseZ + c / 2).forEach((point) => addUniqueAtom(atoms, seen, "Zn", point));
+        hcpBLayerAtoms(lattice, center, baseZ + (u + 0.5) * c).forEach((point) => addUniqueAtom(atoms, seen, "Su", point));
       }
     });
 

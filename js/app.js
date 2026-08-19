@@ -209,18 +209,18 @@
     elements.cardEnglish.textContent = crystal.englishName;
     elements.structureBadge.textContent = crystal.shortName;
     elements.typicalMaterials.textContent = crystal.typicalMaterials;
-    elements.latticeType.textContent = crystal.latticeType || "不适用";
-    elements.atomCount.textContent = crystal.atomCount || "不适用";
-    elements.coordinationNumber.textContent = crystal.coordinationNumber;
-    elements.radiusRelation.textContent = crystal.radiusRelation || "不适用";
-    elements.packingFactor.textContent = crystal.packingFactor || "不标注";
-    elements.latticeConstants.textContent = crystal.latticeConstants || "不适用";
-    elements.closePackedPlane.textContent = crystal.closePackedPlane || "不标注";
-    elements.closePackedDirection.textContent = crystal.closePackedDirection || "不标注";
+    setInfoValue(elements.latticeType, crystal.latticeType);
+    setInfoValue(elements.atomCount, crystal.atomCount);
+    setInfoValue(elements.coordinationNumber, crystal.coordinationNumber);
+    setInfoValue(elements.radiusRelation, crystal.radiusRelation);
+    setInfoValue(elements.packingFactor, crystal.packingFactor);
+    setInfoValue(elements.latticeConstants, crystal.latticeConstants);
+    setInfoValue(elements.closePackedPlane, crystal.closePackedPlane);
+    setInfoValue(elements.closePackedDirection, crystal.closePackedDirection);
     elements.examFocus.textContent = crystal.examFocus;
     elements.commonMistake.textContent = crystal.commonMistake;
     elements.memoryLine.textContent = crystal.memoryLine;
-    elements.interstitialSites.textContent = crystal.interstitialSummary || "";
+    setInfoValue(elements.interstitialSites, crystal.interstitialSummary);
     toggleInfoRows(crystal);
     updateInterstitialDetail(crystal);
   }
@@ -311,9 +311,12 @@
     valueElement.parentElement.hidden = !isVisible;
   }
 
+  function setInfoValue(element, value) {
+    element.textContent = hasUsefulValue(value) ? String(value).trim() : "";
+  }
+
   function hasUsefulValue(value) {
-    if (!value) return false;
-    return !["不适用", "不标注", "不讨论"].includes(String(value).trim());
+    return Boolean(String(value ?? "").trim());
   }
 
   function updateButtonStates() {
