@@ -37,6 +37,20 @@ body {
     "Microsoft YaHei", sans-serif;
 }
 
+sub,
+sup {
+  font-size: 0.7em;
+  line-height: 0;
+}
+
+sub {
+  vertical-align: -0.25em;
+}
+
+sup {
+  vertical-align: 0.45em;
+}
+
 button {
   font: inherit;
   -webkit-tap-highlight-color: transparent;

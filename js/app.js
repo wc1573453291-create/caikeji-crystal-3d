@@ -96,7 +96,7 @@
       button.type = "button";
       button.className = "category-tab";
       button.dataset.id = category.id;
-      button.innerHTML = `<strong>${category.name}</strong><span>${category.subtitle}</span>`;
+      button.innerHTML = `<strong>${formatScientificText(category.name)}</strong><span>${formatScientificText(category.subtitle)}</span>`;
       button.addEventListener("click", () => selectCategory(category.id));
       elements.categoryTabs.appendChild(button);
     });
@@ -112,7 +112,7 @@
         wrapper.className = "system-group";
         const heading = document.createElement("div");
         heading.className = "system-heading";
-        heading.textContent = group.name;
+        setFormattedContent(heading, group.name);
         wrapper.appendChild(heading);
         group.structures.forEach((id) => wrapper.appendChild(createStructureButton(id)));
         elements.structureTabs.appendChild(wrapper);
@@ -132,7 +132,7 @@
     button.type = "button";
     button.className = "structure-tab";
     button.dataset.id = id;
-    button.textContent = crystal.shortName;
+    setFormattedContent(button, crystal.shortName);
     button.setAttribute("aria-label", `切换到${crystal.chineseName}`);
     button.addEventListener("click", () => selectCrystal(id));
     return button;
@@ -205,10 +205,10 @@
   }
 
   function updateCard(crystal) {
-    elements.cardTitle.textContent = crystal.chineseName;
-    elements.cardEnglish.textContent = crystal.englishName;
-    elements.structureBadge.textContent = crystal.shortName;
-    elements.typicalMaterials.textContent = crystal.typicalMaterials;
+    setFormattedContent(elements.cardTitle, crystal.chineseName);
+    setFormattedContent(elements.cardEnglish, crystal.englishName);
+    setFormattedContent(elements.structureBadge, crystal.shortName);
+    setFormattedContent(elements.typicalMaterials, crystal.typicalMaterials);
     setInfoValue(elements.latticeType, crystal.latticeType);
     setInfoValue(elements.atomCount, crystal.atomCount);
     setInfoValue(elements.coordinationNumber, crystal.coordinationNumber);
@@ -217,9 +217,9 @@
     setInfoValue(elements.latticeConstants, crystal.latticeConstants);
     setInfoValue(elements.closePackedPlane, crystal.closePackedPlane);
     setInfoValue(elements.closePackedDirection, crystal.closePackedDirection);
-    elements.examFocus.textContent = crystal.examFocus;
-    elements.commonMistake.textContent = crystal.commonMistake;
-    elements.memoryLine.textContent = crystal.memoryLine;
+    setFormattedContent(elements.examFocus, crystal.examFocus);
+    setFormattedContent(elements.commonMistake, crystal.commonMistake);
+    setFormattedContent(elements.memoryLine, crystal.memoryLine);
     setInfoValue(elements.interstitialSites, crystal.interstitialSummary);
     toggleInfoRows(crystal);
     updateInterstitialDetail(crystal);
@@ -253,16 +253,16 @@
       return;
     }
 
-    elements.interstitialDetailTitle.textContent = detail.title;
-    elements.interstitialGeometry.textContent = detail.geometry;
-    elements.interstitialCoordination.textContent = detail.coordination;
-    elements.interstitialRatio.textContent = detail.radiusRatio;
-    elements.interstitialMetalRadius.textContent = detail.metalRadius;
-    elements.interstitialGapRadius.textContent = detail.gapRadius;
-    elements.interstitialCenterDistance.textContent = detail.centerDistance;
-    elements.interstitialRadiusDifference.textContent = detail.radiusDifference;
+    setFormattedContent(elements.interstitialDetailTitle, detail.title);
+    setFormattedContent(elements.interstitialGeometry, detail.geometry);
+    setFormattedContent(elements.interstitialCoordination, detail.coordination);
+    setFormattedContent(elements.interstitialRatio, detail.radiusRatio);
+    setFormattedContent(elements.interstitialMetalRadius, detail.metalRadius);
+    setFormattedContent(elements.interstitialGapRadius, detail.gapRadius);
+    setFormattedContent(elements.interstitialCenterDistance, detail.centerDistance);
+    setFormattedContent(elements.interstitialRadiusDifference, detail.radiusDifference);
     elements.interstitialCageSwatch.style.background = activeType === "tetra" ? "#a99bff" : "#54d6a0";
-    elements.interstitialNote.textContent = detail.note;
+    setFormattedContent(elements.interstitialNote, detail.note);
     renderInterstitialDerivation(crystal, activeType, detail);
     requestAnimationFrame(() => {
       interstitialRenderer?.render(crystal, activeType);
@@ -274,24 +274,24 @@
     const derivation = detail.derivation;
     if (!derivation) return;
 
-    elements.interstitialDerivationTitle.textContent = `${crystal.shortName} · ${derivation.title}`;
-    elements.interstitialDiagramCaption.textContent = [derivation.edgeLabel, derivation.distanceLabel, derivation.secondaryLabel]
+    setFormattedContent(elements.interstitialDerivationTitle, `${crystal.shortName} · ${derivation.title}`);
+    setFormattedContent(elements.interstitialDiagramCaption, [derivation.edgeLabel, derivation.distanceLabel, derivation.secondaryLabel]
       .filter(Boolean)
-      .join("；");
+      .join("；"));
     elements.interstitialDerivationSteps.replaceChildren(...derivation.steps.map((item) => {
       const row = document.createElement("li");
       const copy = document.createElement("div");
       const label = document.createElement("strong");
       const formula = document.createElement("span");
       copy.className = "derivation-step-copy";
-      label.textContent = item.label;
-      formula.textContent = item.formula;
+      setFormattedContent(label, item.label);
+      setFormattedContent(formula, item.formula);
       copy.append(label, formula);
       row.appendChild(copy);
       return row;
     }));
-    elements.interstitialDerivationResult.textContent = detail.radiusRatio;
-    elements.interstitialDerivationAssumption.textContent = `计算前提：${derivation.assumption}`;
+    setFormattedContent(elements.interstitialDerivationResult, detail.radiusRatio);
+    setFormattedContent(elements.interstitialDerivationAssumption, `计算前提：${derivation.assumption}`);
     elements.interstitialDiagram.setAttribute("aria-label", `${crystal.chineseName}${siteType === "tetra" ? "四面体" : "八面体"}间隙二维尺寸图`);
   }
 
@@ -312,7 +312,15 @@
   }
 
   function setInfoValue(element, value) {
-    element.textContent = hasUsefulValue(value) ? String(value).trim() : "";
+    setFormattedContent(element, hasUsefulValue(value) ? String(value).trim() : "");
+  }
+
+  function setFormattedContent(element, value) {
+    element.innerHTML = formatScientificText(value);
+  }
+
+  function formatScientificText(value) {
+    return window.formatScientificText(value);
   }
 
   function hasUsefulValue(value) {

@@ -455,7 +455,7 @@
       const atomLegend = elements.map((elem) => {
         const color = COLORS[elem] || COLORS.P;
         const name = ELEMENT_NAMES[elem] || elem;
-        return `<div class="legend-item"><span class="legend-swatch" style="background:${color}"></span><span>${name}</span></div>`;
+        return `<div class="legend-item"><span class="legend-swatch" style="background:${color}"></span><span>${window.formatScientificText(name)}</span></div>`;
       }).join("");
       const siteType = this.options.showTetraSites ? "tetra" : (this.options.showOctaSites ? "octa" : "");
       const cageLegend = siteType && this.options.selectedInterstitialKey
@@ -493,7 +493,7 @@
 
     setStatus(text, actionText = "") {
       if (!this.statusElement) return;
-      this.statusElement.textContent = text;
+      this.statusElement.innerHTML = window.formatScientificText(text);
       if (!actionText) return;
       const action = document.createElement("strong");
       action.className = "viewer-status-action";

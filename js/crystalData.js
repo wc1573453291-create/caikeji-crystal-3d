@@ -391,3 +391,29 @@ function wrapFraction(value) {
   const wrapped = value % 1;
   return wrapped < 0 ? wrapped + 1 : wrapped;
 }
+
+/**
+ * Safely formats chemistry notation for HTML output.
+ * Stoichiometric numbers become subscripts, while ionic charges and r+/r-
+ * become superscripts. Coefficients and ordinary numeric values are untouched.
+ */
+function formatScientificText(value) {
+  let text = escapeHtml(String(value ?? ""));
+  text = text.replace(/\br([+-])/g, "r<sup>$1</sup>");
+  text = text.replace(/\b([A-Z][a-z]?)(\d*)([+-])/g, (_, element, magnitude, sign) => (
+    `${element}<sup>${magnitude}${sign}</sup>`
+  ));
+  text = text.replace(/([A-Z][a-z]?|\))(\d+)/g, "$1<sub>$2</sub>");
+  return text;
+}
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+window.formatScientificText = formatScientificText;
