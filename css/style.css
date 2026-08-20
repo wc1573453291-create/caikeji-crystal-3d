@@ -229,8 +229,7 @@ h1 {
 
 .category-tab,
 .structure-tab,
-.tool-button,
-.future-grid button {
+.tool-button {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -452,8 +451,7 @@ h1 {
   padding: 8px 10px;
 }
 
-.knowledge-card,
-.future-panel {
+.knowledge-card {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -826,8 +824,7 @@ dd {
   border-top: 1px solid var(--line);
 }
 
-.study-block h3,
-.future-panel h2 {
+.study-block h3 {
   margin-bottom: 6px;
   font-size: 15px;
 }
@@ -851,19 +848,48 @@ dd {
   font-weight: 650;
 }
 
-.future-panel {
-  padding: 14px;
+.creator-credit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 2px 4px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
 }
 
-.future-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.creator-credit div {
+  display: flex;
+  align-items: baseline;
   gap: 8px;
+  white-space: nowrap;
 }
 
-.future-grid button {
-  color: #77817f;
-  background: #f2f5f4;
+.creator-label {
+  font-size: 12px;
+}
+
+.creator-credit strong {
+  color: var(--brand-dark);
+  font-size: 16px;
+}
+
+.creator-credit p {
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+@media (max-width: 480px) {
+  .creator-credit {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .creator-credit p {
+    text-align: left;
+  }
 }
 
 @media (min-width: 760px) {
