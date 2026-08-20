@@ -6,6 +6,10 @@
 
 直接打开 `index.html` 即可使用。页面通过 CDN 加载 3Dmol.js，因此需要能访问网络。
 
+## 部署
+
+项目通过 GitHub Pages 自动部署。每次向 `main` 分支推送更新，`.github/workflows/deploy-pages.yml` 会发布仓库根目录中的静态网页。
+
 ## 当前内容
 
 - 空间点阵：按三斜、单斜、正交、六方、菱方、四方、立方顺序排列的 14 种布拉菲点阵
