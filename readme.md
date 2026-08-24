@@ -13,6 +13,7 @@
 同时可部署到 Cloudflare Workers Static Assets。Cloudflare 的构建命令设为 `node scripts/build-static.mjs`，部署命令保持 `npx wrangler deploy`；每次向 `main` 推送更新后，Cloudflare 会发布 `dist` 中生成的静态站点。
 
 Cloudflare Pages 镜像使用相同的构建命令，输出目录设为 `dist`，生产分支设为 `main`。
+仓库中的 `deploy-cloudflare-pages.yml` 会在推送到 `main` 后自动更新 Pages 镜像；仓库需配置具有 Cloudflare Pages 编辑权限的 `CLOUDFLARE_API_TOKEN` secret。
 
 ## 当前内容
 
