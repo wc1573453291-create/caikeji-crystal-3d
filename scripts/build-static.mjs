@@ -9,7 +9,8 @@ await mkdir(outputDirectory, { recursive: true });
 await Promise.all([
   cp(new URL("index.html", projectRoot), new URL("index.html", outputDirectory)),
   cp(new URL("css", projectRoot), new URL("css", outputDirectory), { recursive: true }),
-  cp(new URL("js", projectRoot), new URL("js", outputDirectory), { recursive: true })
+  cp(new URL("js", projectRoot), new URL("js", outputDirectory), { recursive: true }),
+  cp(new URL("vendor", projectRoot), new URL("vendor", outputDirectory), { recursive: true })
 ]);
 
 console.log("Static site prepared in dist/");

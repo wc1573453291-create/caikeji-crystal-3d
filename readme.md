@@ -4,13 +4,15 @@
 
 ## 使用方式
 
-直接打开 `index.html` 即可使用。页面通过 CDN 加载 3Dmol.js，因此需要能访问网络。
+直接打开 `index.html` 即可使用。3Dmol.js 已随项目本地提供，不依赖外部 CDN。
 
 ## 部署
 
 项目通过 GitHub Pages 自动部署。每次向 `main` 分支推送更新，`.github/workflows/deploy-pages.yml` 会发布仓库根目录中的静态网页。
 
 同时可部署到 Cloudflare Workers Static Assets。Cloudflare 的构建命令设为 `node scripts/build-static.mjs`，部署命令保持 `npx wrangler deploy`；每次向 `main` 推送更新后，Cloudflare 会发布 `dist` 中生成的静态站点。
+
+Cloudflare Pages 镜像使用相同的构建命令，输出目录设为 `dist`，生产分支设为 `main`。
 
 ## 当前内容
 
@@ -47,6 +49,7 @@ css/style.css
 js/app.js
 js/crystalData.js
 js/renderer.js
+vendor/3Dmol-min.js
 README.md
 ```
 
