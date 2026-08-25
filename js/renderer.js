@@ -91,6 +91,7 @@
 
   const EDGE_LABEL_BG = "rgba(41,111,126,0.88)";
   const ANGLE_LABEL_BG = "rgba(121,77,17,0.9)";
+  const USE_IPAD_WEBGL_COMPATIBILITY = isIPadOS();
 
   class CrystalRenderer {
     constructor(containerId, statusElement, legendElement) {
@@ -118,10 +119,23 @@
         return false;
       }
 
-      this.viewer = window.$3Dmol.createViewer(this.container, {
-        backgroundColor: "#132a2e"
-      });
-      this.viewer.setViewStyle({ style: "outline", color: "#0b1719", width: 0.035 });
+      try {
+        this.viewer = window.$3Dmol.createViewer(this.container, {
+          backgroundColor: "#132a2e",
+          antialias: !USE_IPAD_WEBGL_COMPATIBILITY
+        });
+      } catch (error) {
+        console.error("3D viewer initialization failed", error);
+        this.setStatus("3D 图形初始化失败，请刷新页面后重试。");
+        return false;
+      }
+
+      // iPad Safari/内置浏览器共用 WebKit。关闭轮廓后处理可减少空白画布和上下文丢失。
+      if (!USE_IPAD_WEBGL_COMPATIBILITY) {
+        this.viewer.setViewStyle({ style: "outline", color: "#0b1719", width: 0.035 });
+      }
+      this.container.dataset.renderMode = USE_IPAD_WEBGL_COMPATIBILITY ? "ipad-compatibility" : "standard";
+      this.bindWebGLRecovery();
       this.bindTouchGestures();
       this.setStatus("拖动旋转，捏合缩放。");
       return true;
@@ -491,6 +505,19 @@
       });
     }
 
+    bindWebGLRecovery() {
+      const canvas = this.container.querySelector("canvas");
+      if (!canvas) return;
+
+      canvas.addEventListener("webglcontextlost", (event) => {
+        event.preventDefault();
+        this.setStatus("3D 图形暂时中断，正在恢复...");
+      });
+      canvas.addEventListener("webglcontextrestored", () => {
+        if (this.currentCrystal) this.render(this.currentCrystal);
+      });
+    }
+
     setStatus(text, actionText = "") {
       if (!this.statusElement) return;
       this.statusElement.innerHTML = window.formatScientificText(text);
@@ -511,8 +538,13 @@
 
     init() {
       if (!this.container || !window.$3Dmol) return false;
-      this.viewer = window.$3Dmol.createViewer(this.container, { backgroundColor: "#f5f9f8" });
-      this.viewer.setViewStyle({ style: "outline", color: "#213b38", width: 0.035 });
+      this.viewer = window.$3Dmol.createViewer(this.container, {
+        backgroundColor: "#f5f9f8",
+        antialias: !USE_IPAD_WEBGL_COMPATIBILITY
+      });
+      if (!USE_IPAD_WEBGL_COMPATIBILITY) {
+        this.viewer.setViewStyle({ style: "outline", color: "#213b38", width: 0.035 });
+      }
       return true;
     }
 
@@ -1438,6 +1470,13 @@
       x: list.reduce((sum, touch) => sum + touch.clientX, 0) / list.length,
       y: list.reduce((sum, touch) => sum + touch.clientY, 0) / list.length
     };
+  }
+
+  function isIPadOS() {
+    const userAgent = navigator.userAgent || "";
+    const platform = navigator.platform || "";
+    return /iPad/i.test(userAgent)
+      || (/Macintosh/i.test(userAgent) && platform === "MacIntel" && navigator.maxTouchPoints > 1);
   }
 
   function samePoint(a, b) {

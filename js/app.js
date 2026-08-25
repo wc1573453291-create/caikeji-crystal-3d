@@ -19,6 +19,7 @@
   let renderer = null;
   let interstitialRenderer = null;
   let interstitialDiagramRenderer = null;
+  let viewerResizeObserver = null;
 
   document.addEventListener("DOMContentLoaded", () => {
     cacheElements();
@@ -39,6 +40,7 @@
       selectCrystal(state.crystalId);
       bindControls();
       handleResize();
+      scheduleViewerRefresh();
     }
   });
 
@@ -175,7 +177,16 @@
 
     elements.resetViewBtn.addEventListener("click", () => renderer.resetView());
     window.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", handleResize);
+    window.addEventListener("orientationchange", scheduleViewerRefresh);
+    window.addEventListener("pageshow", scheduleViewerRefresh);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) scheduleViewerRefresh();
+    });
+
+    if ("ResizeObserver" in window) {
+      viewerResizeObserver = new ResizeObserver(handleResize);
+      viewerResizeObserver.observe(document.getElementById("crystalViewer"));
+    }
   }
 
   function selectCategory(id) {
@@ -376,10 +387,21 @@
     if (!renderer || !renderer.viewer) return;
     window.clearTimeout(handleResize.timer);
     handleResize.timer = window.setTimeout(() => {
-      renderer.viewer.resize();
-      renderer.viewer.render();
-      interstitialRenderer?.resize();
-      interstitialDiagramRenderer?.resize();
+      refreshViewers();
     }, 120);
+  }
+
+  function scheduleViewerRefresh() {
+    requestAnimationFrame(() => requestAnimationFrame(refreshViewers));
+    window.setTimeout(refreshViewers, 240);
+    window.setTimeout(refreshViewers, 800);
+  }
+
+  function refreshViewers() {
+    if (!renderer || !renderer.viewer) return;
+    renderer.viewer.resize();
+    renderer.viewer.render();
+    interstitialRenderer?.resize();
+    interstitialDiagramRenderer?.resize();
   }
 })();
