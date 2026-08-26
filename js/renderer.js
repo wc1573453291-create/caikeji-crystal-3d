@@ -93,6 +93,22 @@
   const ANGLE_LABEL_BG = "rgba(121,77,17,0.9)";
   const USE_IPAD_WEBGL_COMPATIBILITY = isIPadOS();
 
+  // 3Dmol 2.5.5 directly references OffscreenCanvas during viewer creation.
+  // Older iPadOS releases do not define it, while newer Safari builds may not
+  // provide the bitmap renderer used by 3Dmol. Use the regular canvas path.
+  if (USE_IPAD_WEBGL_COMPATIBILITY || typeof window.OffscreenCanvas === "undefined") {
+    try {
+      Object.defineProperty(window, "OffscreenCanvas", {
+        configurable: true,
+        writable: true,
+        value: null
+      });
+    } catch (error) {
+      console.warn("Unable to disable OffscreenCanvas compatibility path", error);
+      window.OffscreenCanvas = null;
+    }
+  }
+
   class CrystalRenderer {
     constructor(containerId, statusElement, legendElement) {
       this.container = document.getElementById(containerId);
