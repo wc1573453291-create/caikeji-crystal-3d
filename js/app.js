@@ -361,7 +361,9 @@
     elements.styleBtn.textContent = state.modelStyle === "stick" ? "空间填充" : "球棍模型";
 
     elements.supercellBtn.classList.toggle("is-active", state.supercell === 2);
-    elements.supercellBtn.textContent = state.supercell === 1 ? "1 个晶胞" : "2×2×2（已展开）";
+    const isHexPrism = window.CRYSTAL_LIBRARY[state.crystalId]?.lattice?.type === "hex-prism";
+    elements.supercellBtn.textContent = state.supercell === 1 ? (isHexPrism ? "1 个六棱柱" : "1 个晶胞") : "2×2×2（已展开）";
+    elements.supercellBtn.setAttribute("aria-pressed", String(state.supercell === 2));
 
     const supportsInterstitials = Boolean(window.CRYSTAL_LIBRARY[state.crystalId]?.interstitialSites);
     elements.tetraBtn.hidden = !supportsInterstitials;
@@ -399,8 +401,7 @@
 
   function refreshViewers() {
     if (!renderer || !renderer.viewer) return;
-    renderer.viewer.resize();
-    renderer.viewer.render();
+    renderer.resize();
     interstitialRenderer?.resize();
     interstitialDiagramRenderer?.resize();
   }

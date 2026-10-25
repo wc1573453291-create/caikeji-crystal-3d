@@ -192,11 +192,13 @@
       if (isMetalCrystal) {
         this.viewer.zoom(metalCrystalZoom(crystal, effectiveSupercell));
       } else {
-        this.viewer.zoom(teachingStructureZoom(crystal, effectiveSupercell));
+        this.viewer.zoom(teachingStructureZoom(crystal, effectiveSupercell, this.container));
       }
       this.viewer.render();
 
-      const cellText = crystal.kind === "concept" ? "概念示意" : (this.options.supercell === 1 ? "1 个晶胞" : "2×2×2 晶胞");
+      const cellText = crystal.lattice?.type === "hex-prism"
+        ? (this.options.supercell === 1 ? "六棱柱示意 · 含 3 个原胞" : "2×2×2 六棱柱 · 含 24 个原胞")
+        : (crystal.kind === "concept" ? "概念示意" : (this.options.supercell === 1 ? "1 个晶胞" : "2×2×2 晶胞"));
       const hasSelectedSite = Boolean(this.options.selectedInterstitialKey);
       const siteName = crystal.interstitialSites && this.options.showTetraSites
         ? "四面体间隙"
@@ -211,13 +213,32 @@
       this.render(this.currentCrystal, nextOptions);
     }
 
+    resize() {
+      if (!this.viewer) return;
+      this.viewer.resize();
+      if (this.currentCrystal?.lattice?.type === "hex-prism") {
+        this.viewer.zoomTo();
+        this.viewer.zoom(teachingStructureZoom(this.currentCrystal, this.options.supercell, this.container));
+      }
+      this.viewer.render();
+    }
+
     resetView() {
       if (!this.viewer) return;
       this.viewer.zoomTo();
       if (["fcc", "bcc", "hcp"].includes(this.currentCrystal?.id)) {
         this.viewer.zoom(metalCrystalZoom(this.currentCrystal, this.options.supercell));
       } else {
-        this.viewer.zoom(teachingStructureZoom(this.currentCrystal, this.options.supercell));
+        this.viewer.zoom(teachingStructureZoom(this.currentCrystal, this.options.supercell, this.container));
+      }
+      if (this.currentCrystal?.lattice?.type === "hex-prism") {
+        // Show the basal hexagon and the c-axis together; reset without accumulating rotations.
+        const view = this.viewer.getView();
+        this.viewer.setView([...view.slice(0, 4), 0, 0, 0, 1]);
+        this.viewer.rotate(-65, { x: 1, y: 0, z: 0 });
+        this.viewer.rotate(-15, { x: 0, y: 1, z: 0 });
+        this.viewer.render();
+        return;
       }
       const bccOctaView = this.currentCrystal?.id === "bcc" && this.options.showOctaSites;
       this.viewer.rotate(bccOctaView ? 48 : 18, { x: 1, y: 0, z: 0 });
@@ -226,6 +247,9 @@
     }
 
     buildAtoms(crystal, supercell) {
+      if (crystal.lattice?.type === "hex-prism") {
+        return buildSimpleHexagonalAtoms(crystal.lattice, supercell);
+      }
       if (crystal.lattice?.type === "hex-primitive") {
         return buildHexPrimitiveAtoms(crystal.lattice, supercell);
       }
@@ -368,6 +392,10 @@
     }
 
     addUnitCells(crystal, supercell) {
+      if (crystal.lattice?.type === "hex-prism") {
+        drawHcpHoneycombSupercell(this.viewer, { ...crystal.lattice, radius: crystal.lattice.a }, supercell);
+        return;
+      }
       if (crystal.lattice?.type === "hex-primitive") {
         drawHexPrimitiveSupercell(this.viewer, crystal.lattice, supercell);
         return;
@@ -391,6 +419,26 @@
     }
 
     addLatticeAnnotations(crystal) {
+      if (crystal.lattice?.type === "hex-prism") {
+        const { a, c } = crystal.lattice;
+        const origin = { x: 0, y: 0, z: 0 };
+        // Two basal radii enclose 120 degrees; c joins the two basal centers.
+        const aAxis = { x: -a / 2, y: -Math.sqrt(3) * a / 2, z: 0 };
+        const bAxis = { x: a, y: 0, z: 0 };
+        const cAxis = { x: 0, y: 0, z: c };
+        drawGuide(this.viewer, origin, aAxis, "#54c6b8", 0.018);
+        drawGuide(this.viewer, origin, bAxis, "#7aa4ff", 0.018);
+        drawGuide(this.viewer, origin, cAxis, "#efc66b", 0.018);
+        [
+          { text: "a", position: add(scale(aAxis, 0.5), { x: -0.12 * a, y: 0.08 * a, z: 0 }) },
+          { text: "b", position: add(scale(bAxis, 0.55), { x: 0, y: 0.2 * a, z: 0 }) },
+          { text: "c", position: add(scale(cAxis, 0.55), { x: -0.12 * a, y: 0, z: 0 }) }
+        ].forEach(({ text, position }) => {
+          this.viewer.addLabel(text, { position, fontColor: "#ffffff", backgroundColor: EDGE_LABEL_BG, fontSize: 12, inFront: true });
+        });
+        drawAngleArcBetween(this.viewer, origin, aAxis, bAxis, 0.36 * a, "γ", "#f3a546");
+        return;
+      }
       if (crystal.lattice?.type === "hex-primitive") {
         const origin = hexPrimitivePoint(crystal.lattice, 0, 0, 0);
         const aAxis = subtract(hexPrimitivePoint(crystal.lattice, 1, 0, 0), origin);
@@ -950,7 +998,12 @@
     return 3;
   }
 
-  function teachingStructureZoom(crystal, supercell) {
+  function teachingStructureZoom(crystal, supercell, container) {
+    if (crystal?.lattice?.type === "hex-prism") {
+      // Fit narrow portrait-tablet viewers by width, leaving room for status overlays.
+      const aspect = (container?.clientWidth || 1) / (container?.clientHeight || 1);
+      return (supercell === 1 ? 2.6 : 1.15) * Math.min(1, aspect);
+    }
     const singleCellZoom = {
       zincblende: 3.1,
       wurtzite: 2.7,
@@ -1127,6 +1180,21 @@
         }
       }
     }
+    return atoms;
+  }
+
+  function buildSimpleHexagonalAtoms(lattice, supercell) {
+    const atoms = [];
+    const seen = new Set();
+    const prism = { ...lattice, radius: lattice.a };
+    // The textbook prism groups three primitive cells; only AA layers belong to hP.
+    hcpHoneycombCenters(prism, supercell).forEach((center) => {
+      for (let k = 0; k <= supercell; k += 1) {
+        const z = k * lattice.c;
+        hcpHexVertices(prism, center, z).forEach((point) => addUniqueAtom(atoms, seen, "P", point));
+        addUniqueAtom(atoms, seen, "P", { x: center.x, y: center.y, z });
+      }
+    });
     return atoms;
   }
 

@@ -52,7 +52,11 @@ window.CRYSTAL_LIBRARY = {
   "orthorhombic-c": bravais("orthorhombic-c", "底心正交点阵", "Base-Centered Orthorhombic Lattice", "底心正交", "正交晶系", "a≠b≠c；α=β=γ=90°", "正交晶胞在一对底面中心增加点阵点。", [...makeBoxCorners("P"), frac("P", 0.5, 0.5, 0), frac("P", 0.5, 0.5, 1)], { a: 1, b: 1.35, c: 1.65 }),
   "orthorhombic-i": bravais("orthorhombic-i", "体心正交点阵", "Body-Centered Orthorhombic Lattice", "体心正交", "正交晶系", "a≠b≠c；α=β=γ=90°", "正交晶胞内部增加体心点。", [...makeBoxCorners("P"), frac("P", 0.5, 0.5, 0.5)], { a: 1, b: 1.35, c: 1.65 }),
   "orthorhombic-f": bravais("orthorhombic-f", "面心正交点阵", "Face-Centered Orthorhombic Lattice", "面心正交", "正交晶系", "a≠b≠c；α=β=γ=90°", "正交晶胞 6 个面中心都有点阵点。", [...makeBoxCorners("P"), ...faceCenters("P")], { a: 1, b: 1.35, c: 1.65 }),
-  "hexagonal-p": bravais("hexagonal-p", "简单六方点阵", "Primitive Hexagonal Lattice", "简单六方", "六方晶系", "a=b≠c；α=β=90°，γ=120°", "原胞为底面夹角 γ=120° 的菱形直棱柱；六方对称示意（非原胞）不参与超胞扩展。", [], { type: "hex-primitive", a: 1, c: 1.45 }),
+  "hexagonal-p": {
+    ...bravais("hexagonal-p", "简单六方点阵", "Primitive Hexagonal Lattice", "简单六方", "六方晶系", "a=b≠c；α=β=90°，γ=120°", "图示采用教材常见的六棱柱教学单元，上下底面均有六个角点和一个中心点，沿 c 轴作 AA 重复。一个六棱柱包含 3 个菱形原胞，等效点阵点数为 12×1/6＋2×1/2＝3。2×2×2 展开表示 8 个六棱柱教学单元（24 个原胞）。", [], { type: "hex-prism", a: 1, c: 1.45 }),
+    commonMistake: "六棱柱是组合展示单元，不是最小原胞；上下底面中心是点阵点，柱体内部没有 HCP 的 B 层原子。",
+    memoryLine: "一句话记忆：六方底面，AA 重复；六棱柱含三个原胞。"
+  },
   "rhombohedral-r": bravais("rhombohedral-r", "菱方点阵", "Rhombohedral Lattice", "菱方", "菱方晶系", "a=b=c；α=β=γ≠90°", "三条边相等，但晶胞整体倾斜。", makeBoxCorners("P"), { a: 1, b: 1, c: 1, alphaShift: 0.34, betaShift: 0.22 }),
   "tetragonal-p": bravais("tetragonal-p", "简单四方点阵", "Primitive Tetragonal Lattice", "简单四方", "四方晶系", "a=b≠c；α=β=γ=90°", "底面为正方形，高度 c 与 a 不等。", makeBoxCorners("P"), { a: 1, b: 1, c: 1.45 }),
   "tetragonal-i": bravais("tetragonal-i", "体心四方点阵", "Body-Centered Tetragonal Lattice", "体心四方", "四方晶系", "a=b≠c；α=β=γ=90°", "简单四方点阵加体心点。", [...makeBoxCorners("P"), frac("P", 0.5, 0.5, 0.5)], { a: 1, b: 1, c: 1.45 }),
