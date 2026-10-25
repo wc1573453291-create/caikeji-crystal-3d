@@ -28,10 +28,10 @@
 
     renderer = new window.CrystalRenderer("crystalViewer", elements.viewerStatus, elements.elementLegend);
     if (renderer.init()) {
-      renderer.setInterstitialSelectionHandler(({ crystal, siteType, key }) => {
+      renderer.setInterstitialSelectionHandler(({ crystal, siteType, key, site }) => {
         if (crystal.id !== state.crystalId) return;
         state.selectedInterstitialKey = key;
-        updateInterstitialDetail(crystal, siteType);
+        updateInterstitialDetail(crystal, siteType, site);
       });
       interstitialRenderer = new window.InterstitialRenderer("interstitialViewer");
       interstitialRenderer.init();
@@ -251,7 +251,7 @@
     requestAnimationFrame(() => renderer.resetView());
   }
 
-  function updateInterstitialDetail(crystal, selectedType = "") {
+  function updateInterstitialDetail(crystal, selectedType = "", selectedSite = null) {
     const activeType = state.selectedInterstitialKey
       ? (selectedType || (state.showTetraSites ? "tetra" : (state.showOctaSites ? "octa" : "")))
       : "";
@@ -276,7 +276,7 @@
     setFormattedContent(elements.interstitialNote, detail.note);
     renderInterstitialDerivation(crystal, activeType, detail);
     requestAnimationFrame(() => {
-      interstitialRenderer?.render(crystal, activeType);
+      interstitialRenderer?.render(crystal, activeType, selectedSite);
       interstitialDiagramRenderer?.render(crystal, activeType);
     });
   }
