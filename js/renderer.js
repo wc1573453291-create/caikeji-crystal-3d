@@ -219,7 +219,7 @@
       if (this.currentCrystal?.lattice?.type === "hex-prism") {
         this.viewer.zoomTo();
         this.viewer.zoom(teachingStructureZoom(this.currentCrystal, this.options.supercell, this.container));
-      } else if (this.currentCrystal?.id === "bcc" && this.options.selectedInterstitialKey) {
+      } else if (this.currentCrystal?.id === "hcp" || (this.currentCrystal?.id === "bcc" && this.options.selectedInterstitialKey)) {
         this.viewer.zoomTo();
         this.viewer.zoom(metalCrystalZoom(this.currentCrystal, this.options.supercell, this.container, this.options.selectedInterstitialKey));
       }
@@ -371,8 +371,8 @@
       const nextKey = this.options.selectedInterstitialKey === key ? "" : key;
       this.options.selectedInterstitialKey = nextKey;
       this.render(this.currentCrystal);
-      // Keep orientation but refit BCC when periodic neighbors enter or leave the scene.
-      const nextView = this.currentCrystal.id === "bcc"
+      // Keep orientation but refit when periodic neighbors enter or leave the scene.
+      const nextView = ["bcc", "hcp"].includes(this.currentCrystal.id)
         ? [...this.viewer.getView().slice(0, 4), ...view.slice(4)]
         : view;
       this.viewer.setView(nextView);
@@ -985,6 +985,9 @@
     if (crystal.id === "bcc") {
       return bccNeighborAtoms(crystal.lattice, siteType, site);
     }
+    if (crystal.id === "hcp") {
+      return hcpNeighborAtoms(crystal.lattice, siteType, site);
+    }
     if (crystal.id === "fcc") {
       const cluster = buildInterstitialCluster(crystal.id, siteType);
       return cluster.metals.map((atom) => ({
@@ -1020,9 +1023,12 @@
       const aspect = (container?.clientWidth || 1) / (container?.clientHeight || 1);
       return (supercell === 2 ? 1.15 : 2.5) * Math.min(1, aspect);
     }
+    if (crystal?.id === "hcp") {
+      const aspect = (container?.clientWidth || 1) / (container?.clientHeight || 1);
+      return (supercell === 2 ? 1.15 : 2.6) * Math.min(1, aspect);
+    }
     if (supercell === 2) return 1.28;
     if (crystal?.id === "bcc") return 4.2;
-    if (crystal?.id === "hcp") return 3.5;
     return 3;
   }
 
@@ -1063,6 +1069,11 @@
       metals = bccNeighborAtoms(lattice, siteType, site).map(atom => subtract(atom, site));
       metalRadius = Math.sqrt(3) * a / 4;
       gapRadius = ((siteType === "tetra" ? Math.sqrt(5) : 2) - Math.sqrt(3)) * a / 4;
+    } else if (crystalId === "hcp") {
+      const site = selectedSite || hcpPoint(lattice, ...(siteType === "tetra" ? HCP_TETRA_BASIS[2] : HCP_OCTA_BASIS[0]));
+      metals = hcpNeighborAtoms(lattice, siteType, site).map(atom => subtract(atom, site));
+      metalRadius = (lattice.radius || 1) / 2;
+      gapRadius = Math.min(...metals.map(atom => distance(center, atom))) - metalRadius;
     } else if (crystalId === "fcc" && siteType === "tetra") {
       metals = [
         { x: -0.25, y: -0.25, z: -0.25 }, { x: 0.25, y: 0.25, z: -0.25 },
@@ -1220,25 +1231,7 @@
   }
 
   function buildHcpHoneycombAtoms(lattice, supercell) {
-    const atoms = [];
-    const seen = new Set();
-    const centers = hcpHoneycombCenters(lattice, supercell);
-    const c = lattice.c || 1.55;
-
-    centers.forEach((center) => {
-      for (let k = 0; k <= supercell; k += 1) {
-        const z = k * c;
-        hcpHexVertices(lattice, center, z).forEach((point) => addUniqueAtom(atoms, seen, "M", point));
-        addUniqueAtom(atoms, seen, "M", { x: center.x, y: center.y, z });
-      }
-
-      for (let k = 0; k < supercell; k += 1) {
-        const z = k * c + c / 2;
-        hcpBLayerAtoms(lattice, center, z).forEach((point) => addUniqueAtom(atoms, seen, "M", point));
-      }
-    });
-
-    return atoms;
+    return hcpPointsInPrisms(lattice, supercell, HCP_METAL_BASIS, "M");
   }
 
   function buildWurtziteHoneycombAtoms(lattice, supercell) {
@@ -1268,23 +1261,74 @@
   }
 
   function buildHcpInterstitialSites(lattice, siteType, supercell) {
+    return hcpPointsInPrisms(lattice, supercell,
+      siteType === "tetra" ? HCP_TETRA_BASIS : HCP_OCTA_BASIS,
+      siteType === "tetra" ? "TET" : "OCT");
+  }
+
+  // Fractional coordinates in a1=(a,0,0), a2=(-a/2,sqrt(3)*a/2,0), a3=(0,0,c).
+  // The ideal ABAB lattice has two metals, four tetrahedral and two octahedral sites per primitive cell.
+  const HCP_METAL_BASIS = [[0, 0, 0], [1 / 3, 2 / 3, 1 / 2]];
+  const HCP_TETRA_BASIS = [[0, 0, 3 / 8], [0, 0, 5 / 8], [1 / 3, 2 / 3, 1 / 8], [1 / 3, 2 / 3, 7 / 8]];
+  const HCP_OCTA_BASIS = [[2 / 3, 1 / 3, 1 / 4], [2 / 3, 1 / 3, 3 / 4]];
+
+  function hcpPoint(lattice, u, v, w) {
+    const a = lattice.radius || 1;
+    const c = lattice.c || a * Math.sqrt(8 / 3);
+    return { x: a * (u - v / 2), y: Math.sqrt(3) * a * v / 2, z: c * w };
+  }
+
+  function hcpFractional(lattice, point) {
+    const a = lattice.radius || 1;
+    const c = lattice.c || a * Math.sqrt(8 / 3);
+    const v = 2 * point.y / (Math.sqrt(3) * a);
+    return [point.x / a + v / 2, v, point.z / c];
+  }
+
+  function hcpPointsInPrisms(lattice, supercell, basis, elem) {
     const atoms = [];
     const seen = new Set();
     const centers = hcpHoneycombCenters(lattice, supercell);
-    const c = lattice.c || 1.55;
-    const elem = siteType === "tetra" ? "TET" : "OCT";
+    const a = lattice.radius || 1;
+    const c = lattice.c || a * Math.sqrt(8 / 3);
+    const corners = centers.flatMap(center => hcpHexVertices(lattice, center, 0).map(point => hcpFractional(lattice, point)));
+    const lower = [0, 1].map(axis => Math.floor(Math.min(...corners.map(p => p[axis]))) - 1);
+    const upper = [0, 1].map(axis => Math.ceil(Math.max(...corners.map(p => p[axis]))) + 1);
+    const epsilon = 1e-7 * a;
 
-    centers.forEach((center) => {
-      for (let k = 0; k < supercell; k += 1) {
-        const baseZ = k * c;
-        const sites = siteType === "tetra"
-          ? hcpTetraInterstitials(lattice, center, baseZ)
-          : hcpOctaInterstitials(lattice, center, baseZ);
-        sites.forEach((point) => addUniqueAtom(atoms, seen, elem, point));
+    // Clip one periodic lattice to the union of the teaching prisms, not to independent cells.
+    for (let i = lower[0]; i <= upper[0]; i += 1) {
+      for (let j = lower[1]; j <= upper[1]; j += 1) {
+        for (let k = 0; k <= supercell; k += 1) {
+          for (const [u, v, w] of basis) {
+            const point = hcpPoint(lattice, i + u, j + v, k + w);
+            if (point.z > supercell * c + epsilon) continue;
+            const inside = centers.some(center => {
+              const dx = Math.abs(point.x - center.x), dy = Math.abs(point.y - center.y);
+              return dy <= Math.sqrt(3) * a / 2 + epsilon && Math.sqrt(3) * dx + dy <= Math.sqrt(3) * a + epsilon;
+            });
+            if (inside) addUniqueAtom(atoms, seen, elem, point);
+          }
+        }
       }
-    });
-
+    }
     return atoms;
+  }
+
+  function hcpNeighborAtoms(lattice, siteType, site) {
+    const origin = hcpFractional(lattice, site).map(Math.floor);
+    const atoms = [];
+    // Boundary holes need real neighbors from the infinite ABAB lattice outside the visible frame.
+    for (let i = origin[0] - 1; i <= origin[0] + 1; i += 1) {
+      for (let j = origin[1] - 1; j <= origin[1] + 1; j += 1) {
+        for (let k = origin[2] - 1; k <= origin[2] + 1; k += 1) {
+          for (const [u, v, w] of HCP_METAL_BASIS) {
+            atoms.push({ elem: "M", ...hcpPoint(lattice, i + u, j + v, k + w) });
+          }
+        }
+      }
+    }
+    return findNearestMetalAtoms(site, atoms, siteType === "tetra" ? 4 : 6);
   }
 
   function drawHcpHoneycombSupercell(viewer, lattice, supercell) {
@@ -1342,41 +1386,6 @@
       });
     }
     return atoms;
-  }
-
-  function hcpTetraInterstitials(lattice, center, baseZ) {
-    const s = lattice.radius || 1;
-    const c = lattice.c || 1.55;
-    const lower = [
-      { x: center.x, y: center.y + 0.34 * s, z: baseZ + 0.25 * c },
-      { x: center.x + 0.29 * s, y: center.y - 0.17 * s, z: baseZ + 0.25 * c },
-      { x: center.x - 0.29 * s, y: center.y - 0.17 * s, z: baseZ + 0.25 * c },
-      { x: center.x + 0.5 * s, y: center.y + 0.34 * s, z: baseZ + 0.25 * c },
-      { x: center.x - 0.5 * s, y: center.y + 0.34 * s, z: baseZ + 0.25 * c },
-      { x: center.x, y: center.y - 0.68 * s, z: baseZ + 0.25 * c }
-    ];
-    const upper = [
-      { x: center.x, y: center.y - 0.34 * s, z: baseZ + 0.75 * c },
-      { x: center.x + 0.29 * s, y: center.y + 0.17 * s, z: baseZ + 0.75 * c },
-      { x: center.x - 0.29 * s, y: center.y + 0.17 * s, z: baseZ + 0.75 * c },
-      { x: center.x + 0.5 * s, y: center.y - 0.34 * s, z: baseZ + 0.75 * c },
-      { x: center.x - 0.5 * s, y: center.y - 0.34 * s, z: baseZ + 0.75 * c },
-      { x: center.x, y: center.y + 0.68 * s, z: baseZ + 0.75 * c }
-    ];
-    return [...lower, ...upper];
-  }
-
-  function hcpOctaInterstitials(lattice, center, baseZ) {
-    const s = lattice.radius || 1;
-    const c = lattice.c || 1.55;
-    return [
-      { x: center.x, y: center.y, z: baseZ + 0.5 * c },
-      { x: center.x + 0.5 * s, y: center.y + Math.sqrt(3) * s / 6, z: baseZ + 0.5 * c },
-      { x: center.x - 0.5 * s, y: center.y + Math.sqrt(3) * s / 6, z: baseZ + 0.5 * c },
-      { x: center.x + 0.5 * s, y: center.y - Math.sqrt(3) * s / 6, z: baseZ + 0.5 * c },
-      { x: center.x - 0.5 * s, y: center.y - Math.sqrt(3) * s / 6, z: baseZ + 0.5 * c },
-      { x: center.x, y: center.y + Math.sqrt(3) * s / 3, z: baseZ + 0.5 * c }
-    ];
   }
 
   function drawHcpHexEdges(viewer, lattice, seen, center, z) {
